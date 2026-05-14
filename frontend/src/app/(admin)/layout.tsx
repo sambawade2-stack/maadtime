@@ -48,6 +48,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!user) {
       router.replace("/auth/connexion");
+    } else if (user.role !== "admin" && !user.is_staff) {
+      router.replace("/profil");
     }
   }, [user, router]);
   const { newOrdersCount, clearNewOrders } = useNotificationStore();

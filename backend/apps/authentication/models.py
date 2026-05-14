@@ -26,6 +26,11 @@ class User(AbstractUser):
     def __str__(self):
         return self.email
 
+    def save(self, *args, **kwargs):
+        if self.is_staff or self.is_superuser:
+            self.role = 'admin'
+        super().save(*args, **kwargs)
+
     @property
     def is_admin_user(self):
         return self.role == 'admin' or self.is_staff

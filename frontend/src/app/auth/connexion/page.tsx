@@ -30,7 +30,7 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success("Connexion réussie !");
       const { user } = useAuthStore.getState();
-      router.push(user?.role === "admin" ? "/dashboard" : "/profil");
+      router.push((user?.role === "admin" || user?.is_staff) ? "/dashboard" : "/profil");
     } catch {
       toast.error("Email ou mot de passe incorrect.");
     }

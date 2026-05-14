@@ -6,6 +6,7 @@ export interface User {
   last_name: string;
   phone: string;
   role: "admin" | "client";
+  is_staff: boolean;
   avatar: string | null;
   created_at: string;
 }
