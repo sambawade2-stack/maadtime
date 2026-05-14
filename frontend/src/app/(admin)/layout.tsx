@@ -44,6 +44,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/auth/connexion");
+    }
+  }, [user, router]);
   const { newOrdersCount, clearNewOrders } = useNotificationStore();
 
   useOrderPolling();

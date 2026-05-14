@@ -74,7 +74,7 @@ export default function AProposPage() {
       </section>
 
       {/* Stats */}
-      <section className="max-w-5xl mx-auto px-4 -mt-8">
+      <section className="max-w-5xl mx-auto px-4 py-14">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((s) => (
             <div key={s.label} className="bg-white dark:bg-card rounded-2xl p-6 shadow-card text-center">
