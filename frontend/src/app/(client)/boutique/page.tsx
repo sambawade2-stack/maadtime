@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -8,7 +8,7 @@ import { Product, Category, PaginatedResponse } from "@/types";
 import { productsApi } from "@/lib/api";
 import ProductCard from "@/components/boutique/ProductCard";
 
-export default function BoutiquePage() {
+function BoutiqueContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -288,5 +288,13 @@ export default function BoutiquePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function BoutiquePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-beige" />}>
+      <BoutiqueContent />
+    </Suspense>
   );
 }

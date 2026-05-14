@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search, Package, Truck, CheckCircle, Clock, XCircle, ChevronRight } from "lucide-react";
 import { ordersApi } from "@/lib/api";
@@ -24,7 +24,7 @@ function getStepIndex(status: string) {
   return i === -1 ? 0 : i;
 }
 
-export default function SuiviPage() {
+function SuiviContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [input, setInput] = useState(searchParams.get("numero") || "");
@@ -244,5 +244,13 @@ export default function SuiviPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SuiviPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-brand-beige" />}>
+      <SuiviContent />
+    </Suspense>
   );
 }
