@@ -1,0 +1,22 @@
+# Configuration Dokploy pour Maadtime
+# Dokploy détecte automatiquement docker-compose.yml
+
+version: "1"
+
+project:
+  name: maadtime
+  domain: votre-domaine.com
+
+services:
+  nginx:
+    port: 80
+    ssl: true
+    # Dokploy génère automatiquement les certificats SSL via Let's Encrypt
+
+# Variables d'environnement à configurer dans Dokploy UI:
+# - SECRET_KEY
+# - POSTGRES_PASSWORD
+# - REDIS_PASSWORD
+# - ALLOWED_HOSTS
+# - CORS_ALLOWED_ORIGINS
+# - NEXT_PUBLIC_API_URL
