@@ -54,9 +54,11 @@ export default function AProposPage() {
           <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-black/10 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-4xl mx-auto text-center">
-          <Link href="/" className="inline-flex items-center gap-1 text-sm text-white/60 hover:text-white mb-8 transition-colors">
-            ← Retour à l&apos;accueil
-          </Link>
+          <div className="mb-8">
+            <Link href="/" className="inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              ← Retour à l&apos;accueil
+            </Link>
+          </div>
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <Leaf className="w-4 h-4" />
             Notre histoire
