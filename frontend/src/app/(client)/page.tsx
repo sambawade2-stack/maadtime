@@ -1,6 +1,5 @@
 import HeroSection from "@/components/home/HeroSection";
 import StatsBar from "@/components/home/StatsBar";
-import CategoriesSection from "@/components/home/CategoriesSection";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import NaturalSection from "@/components/home/NaturalSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
@@ -11,7 +10,6 @@ export default function HomePage() {
     <>
       <HeroSection />
       <StatsBar />
-      <CategoriesSection />
       <FeaturedProducts />
       <NaturalSection />
       <TestimonialsSection />

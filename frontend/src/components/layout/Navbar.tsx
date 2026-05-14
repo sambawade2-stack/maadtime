@@ -13,6 +13,8 @@ import CartDrawer from "@/components/panier/CartDrawer";
 const navLinks = [
   { href: "/", label: "Accueil" },
   { href: "/boutique", label: "Boutique" },
+  { href: "/a-propos", label: "À propos" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export default function Navbar() {
