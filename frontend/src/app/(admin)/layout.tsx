@@ -42,19 +42,28 @@ const navSections = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user, logout, _hasHydrated } = useAuthStore();
   const router = useRouter();
+  const { newOrdersCount, clearNewOrders } = useNotificationStore();
+
+  useOrderPolling();
 
   useEffect(() => {
+    if (!_hasHydrated) return;
     if (!user) {
       router.replace("/auth/connexion");
     } else if (user.role !== "admin" && !user.is_staff) {
       router.replace("/profil");
     }
-  }, [user, router]);
-  const { newOrdersCount, clearNewOrders } = useNotificationStore();
+  }, [user, _hasHydrated, router]);
 
-  useOrderPolling();
+  if (!_hasHydrated) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-brand-green/30 border-t-brand-green rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleLogout = async () => {
     await logout();

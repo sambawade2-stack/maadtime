@@ -76,7 +76,7 @@ export default function ProductDetailPage() {
     : [];
 
   return (
-    <div className="bg-brand-beige dark:bg-background min-h-screen">
+    <div className="bg-brand-beige dark:bg-background min-h-screen pb-24 lg:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
@@ -236,7 +236,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Actions */}
+            {/* Actions — sticky bar on mobile */}
             <div className="flex gap-3 mb-8">
               {product.in_stock ? (
                 <button onClick={handleAddToCart} className="btn-primary flex-1 justify-center">
@@ -250,18 +250,30 @@ export default function ProductDetailPage() {
               )}
               <button
                 onClick={() => setIsWishlisted(!isWishlisted)}
-                className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-border hover:border-brand-green transition-colors"
+                className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-border hover:border-brand-green transition-colors shrink-0"
               >
-                <Heart
-                  className={`w-5 h-5 ${isWishlisted ? "fill-red-500 text-red-500" : "text-muted-foreground"}`}
-                />
+                <Heart className={`w-5 h-5 ${isWishlisted ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
               </button>
               <button
                 onClick={() => navigator.share?.({ title: product.name, url: window.location.href })}
-                className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-border hover:border-brand-green transition-colors"
+                className="w-12 h-12 flex items-center justify-center rounded-xl border-2 border-border hover:border-brand-green transition-colors shrink-0"
               >
                 <Share2 className="w-5 h-5 text-muted-foreground" />
               </button>
+            </div>
+
+            {/* Sticky mobile CTA */}
+            <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-border p-4 flex gap-3">
+              {product.in_stock ? (
+                <button onClick={handleAddToCart} className="btn-primary flex-1 justify-center py-3.5">
+                  <ShoppingCart className="w-5 h-5" />
+                  Ajouter au panier — {formatPrice(product.price * quantity)}
+                </button>
+              ) : (
+                <button disabled className="flex-1 btn-primary opacity-50 cursor-not-allowed justify-center py-3.5">
+                  Rupture de stock
+                </button>
+              )}
             </div>
 
             {/* WhatsApp order */}

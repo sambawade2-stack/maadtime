@@ -118,8 +118,46 @@ export default function CheckoutPage() {
         <h1 className="font-display text-3xl font-bold mb-8">Finaliser la commande</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Order summary — visible en haut sur mobile, à droite sur desktop */}
+          <div className="lg:col-span-1 lg:order-last">
+            <div className="bg-white dark:bg-card rounded-2xl shadow-card p-6 lg:sticky lg:top-24">
+              <h2 className="font-semibold mb-4">Récapitulatif</h2>
+              <div className="space-y-3 mb-5 max-h-64 overflow-y-auto">
+                {items.map((item) => (
+                  <div key={item.product.id} className="flex items-center gap-3">
+                    <div className="w-14 h-14 bg-brand-beige rounded-xl overflow-hidden shrink-0">
+                      {item.product.main_image && (
+                        <Image
+                          src={item.product.main_image}
+                          alt={item.product.name}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.product.name}</p>
+                      <p className="text-xs text-muted-foreground">x{item.quantity}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-brand-green">
+                      {formatPrice(item.product.price * item.quantity)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2 text-sm border-t border-border pt-4">
+                <div className="flex justify-between font-bold text-base">
+                  <span>Total</span>
+                  <span className="text-brand-green">{formatPrice(subtotal())}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Frais de livraison calculés à part</p>
+              </div>
+            </div>
+          </div>
+
           {/* Form */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 lg:order-first">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Delivery info */}
               <div className="bg-white dark:bg-card rounded-2xl p-6 shadow-card">
@@ -310,44 +348,6 @@ export default function CheckoutPage() {
             </form>
           </div>
 
-          {/* Order summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-card rounded-2xl shadow-card p-6 sticky top-24">
-              <h2 className="font-semibold mb-4">Récapitulatif</h2>
-              <div className="space-y-3 mb-5 max-h-64 overflow-y-auto">
-                {items.map((item) => (
-                  <div key={item.product.id} className="flex items-center gap-3">
-                    <div className="w-14 h-14 bg-brand-beige rounded-xl overflow-hidden shrink-0">
-                      {item.product.main_image && (
-                        <Image
-                          src={item.product.main_image}
-                          alt={item.product.name}
-                          width={56}
-                          height={56}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.product.name}</p>
-                      <p className="text-xs text-muted-foreground">x{item.quantity}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-brand-green">
-                      {formatPrice(item.product.price * item.quantity)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-2 text-sm border-t border-border pt-4">
-                <div className="flex justify-between font-bold text-base">
-                  <span>Total</span>
-                  <span className="text-brand-green">{formatPrice(subtotal())}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Frais de livraison calculés à part</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
