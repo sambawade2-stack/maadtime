@@ -12,12 +12,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "demosn.cloud",
+        hostname: "maadtime.com",
         pathname: "/media/**",
       },
       {
         protocol: "https",
-        hostname: "www.demosn.cloud",
+        hostname: "www.maadtime.com",
         pathname: "/media/**",
       },
     ],

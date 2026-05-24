@@ -31,14 +31,14 @@ services:
       DJANGO_SETTINGS_MODULE: core.settings.production
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "False"
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-demosn.cloud,www.demosn.cloud,backend,localhost}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-maadtime.com,www.maadtime.com,backend,localhost}
       POSTGRES_DB: ${POSTGRES_DB:-maadtime}
       POSTGRES_USER: ${POSTGRES_USER:-maadtime}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://demosn.cloud,https://www.demosn.cloud}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://maadtime.com,https://www.maadtime.com}
     volumes:
       - media_data:/app/media
       - static_data:/app/staticfiles
@@ -71,7 +71,7 @@ except: sys.exit(1)
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://demosn.cloud/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://maadtime.com/api}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -93,12 +93,12 @@ except: sys.exit(1)
       - frontend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.maadtime-http.rule=Host(`demosn.cloud`) || Host(`www.demosn.cloud`)"
+      - "traefik.http.routers.maadtime-http.rule=Host(`maadtime.com`) || Host(`www.maadtime.com`)"
       - "traefik.http.routers.maadtime-http.entrypoints=web"
       - "traefik.http.routers.maadtime-http.middlewares=maadtime-redirect"
       - "traefik.http.middlewares.maadtime-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.maadtime-redirect.redirectscheme.permanent=true"
-      - "traefik.http.routers.maadtime.rule=Host(`demosn.cloud`) || Host(`www.demosn.cloud`)"
+      - "traefik.http.routers.maadtime.rule=Host(`maadtime.com`) || Host(`www.maadtime.com`)"
       - "traefik.http.routers.maadtime.entrypoints=websecure"
       - "traefik.http.routers.maadtime.tls=true"
       - "traefik.http.routers.maadtime.tls.certresolver=letsencrypt"

@@ -17,9 +17,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Maadtime — Le goût naturel du maad sénégalais",
     description: "Des produits locaux, naturels et de qualité pour votre bien-être.",
+    url: "https://maadtime.com",
+    siteName: "Maadtime",
     type: "website",
     locale: "fr_SN",
   },
+  metadataBase: new URL("https://maadtime.com"),
 };
 
 export default function RootLayout({
