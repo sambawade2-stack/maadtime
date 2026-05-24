@@ -57,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [user, _hasHydrated, router]);
 
-  if (!_hasHydrated) {
+  if (!_hasHydrated || !user || (user.role !== "admin" && !user.is_staff)) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-brand-green/30 border-t-brand-green rounded-full animate-spin" />
