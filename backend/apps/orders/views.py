@@ -91,8 +91,13 @@ class OrderTrackView(APIView):
             return Response({'error': 'Commande introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
         from .serializers import OrderDetailSerializer
-        serializer = OrderDetailSerializer(order)
-        return Response(serializer.data)
+        data = OrderDetailSerializer(order).data
+        # Masquer les données personnelles sensibles pour le tracking public
+        data['phone'] = data['phone'][:3] + '****' + data['phone'][-2:] if data.get('phone') else ''
+        data.pop('address_line', None)
+        data.pop('neighborhood', None)
+        data.pop('notes', None)
+        return Response(data)
 
 
 class AddressViewSet(viewsets.ModelViewSet):

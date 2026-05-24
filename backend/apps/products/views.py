@@ -91,6 +91,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image requise.'}, status=status.HTTP_400_BAD_REQUEST)
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if image.content_type not in allowed_types:
+            return Response({'error': 'Format invalide. Utilisez JPEG, PNG ou WebP.'}, status=status.HTTP_400_BAD_REQUEST)
+        if image.size > 5 * 1024 * 1024:
+            return Response({'error': 'Image trop volumineuse (max 5 Mo).'}, status=status.HTTP_400_BAD_REQUEST)
         is_main = not product.images.exists()
         ProductImage.objects.create(product=product, image=image, is_main=is_main)
         return Response({'detail': 'Image ajoutée.'}, status=status.HTTP_201_CREATED)
