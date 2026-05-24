@@ -32,7 +32,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
-        data = super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except Exception as e:
+            raise serializers.ValidationError({'detail': 'Email ou mot de passe incorrect.'}) from None
         data['user'] = UserSerializer(self.user).data
         return data
 
