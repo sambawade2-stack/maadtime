@@ -8,12 +8,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-maadtime} -d ${POSTGRES_DB:-maadtime}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
     networks:
       - dokploy-network
 
@@ -23,12 +17,6 @@ services:
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping || redis-cli ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     networks:
@@ -55,14 +43,26 @@ services:
       - media_data:/app/media
       - static_data:/app/staticfiles
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     command: >
-      sh -c "python manage.py migrate --settings=core.settings.production &&
-             python manage.py collectstatic --noinput --settings=core.settings.production &&
-             gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+      sh -c "
+        echo 'Waiting for PostgreSQL...' &&
+        until python -c \"
+import psycopg2, os, sys
+try:
+    psycopg2.connect(host='db', port=5432, user=os.environ['POSTGRES_USER'], password=os.environ['POSTGRES_PASSWORD'], dbname=os.environ['POSTGRES_DB'])
+    sys.exit(0)
+except: sys.exit(1)
+\"; do
+          echo 'DB not ready, retrying in 3s...'
+          sleep 3
+        done &&
+        echo 'PostgreSQL ready!' &&
+        python manage.py migrate --settings=core.settings.production &&
+        python manage.py collectstatic --noinput --settings=core.settings.production &&
+        gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120
+      "
     networks:
       - dokploy-network
 
