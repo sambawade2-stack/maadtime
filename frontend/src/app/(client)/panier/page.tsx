@@ -103,7 +103,7 @@ export default function PanierPage() {
 
           {/* Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-card rounded-2xl shadow-card p-6 sticky top-24">
+            <div className="bg-white dark:bg-card rounded-2xl shadow-card p-6 sticky top-16 lg:top-24">
               <h2 className="font-semibold mb-5">Résumé</h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between font-bold text-base pt-3 border-t border-border">

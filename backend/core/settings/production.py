@@ -1,4 +1,5 @@
 from .base import *
+from decouple import config
 
 DEBUG = False
 
@@ -18,6 +19,11 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='https://maadtime.com,https://www.maadtime.com'
+).split(',')
 
 # Désactiver le browsable API en production
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [

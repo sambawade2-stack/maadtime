@@ -11,7 +11,7 @@ export default function WhatsAppCTA() {
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="bg-gradient-to-br from-brand-green to-brand-green-dark rounded-3xl p-12 text-white relative overflow-hidden"
+          className="bg-gradient-to-br from-brand-green to-brand-green-dark rounded-3xl p-6 sm:p-8 md:p-12 text-white relative overflow-hidden"
         >
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />

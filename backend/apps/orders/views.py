@@ -1,4 +1,5 @@
 from rest_framework import generics, viewsets, permissions, status
+from django.db import models
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -62,19 +63,22 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
+        from django.db import transaction
+        from apps.products.models import Product
         order = self.get_object()
         if order.status not in ['pending', 'confirmed']:
             return Response(
                 {'error': 'Cette commande ne peut plus être annulée.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        order.status = 'cancelled'
-        order.save()
-        # Restore stock
-        for item in order.items.all():
-            if item.product:
-                item.product.stock += item.quantity
-                item.product.save()
+        with transaction.atomic():
+            order.status = 'cancelled'
+            order.save()
+            for item in order.items.all():
+                if item.product_id:
+                    Product.objects.filter(id=item.product_id).update(
+                        stock=models.F('stock') + item.quantity
+                    )
         return Response({'detail': 'Commande annulée.'})
 
 
@@ -93,7 +97,7 @@ class OrderTrackView(APIView):
         from .serializers import OrderDetailSerializer
         data = OrderDetailSerializer(order).data
         # Masquer les données personnelles sensibles pour le tracking public
-        data['phone'] = data['phone'][:3] + '****' + data['phone'][-2:] if data.get('phone') else ''
+        data['phone'] = '****' + data['phone'][-2:] if data.get('phone') else ''
         data.pop('address_line', None)
         data.pop('neighborhood', None)
         data.pop('notes', None)

@@ -1,4 +1,8 @@
+import logging
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+
+logger = logging.getLogger(__name__)
 
 
 class OptionalJWTAuthentication(JWTAuthentication):
@@ -10,5 +14,8 @@ class OptionalJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
         try:
             return super().authenticate(request)
-        except Exception:
+        except (TokenError, InvalidToken):
+            return None
+        except Exception as e:
+            logger.warning("OptionalJWTAuthentication unexpected error: %s", e)
             return None

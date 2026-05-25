@@ -86,7 +86,7 @@ export default function ProductCard({ product }: Props) {
             {product.in_stock && (
               <button
                 onClick={handleAddToCart}
-                className="flex-1 max-w-[140px] bg-brand-green text-white rounded-xl shadow-premium flex items-center justify-center gap-2 text-xs font-semibold py-2 hover:bg-brand-green-dark transition-colors"
+                className="flex-1 max-w-[110px] sm:max-w-[140px] bg-brand-green text-white rounded-xl shadow-premium flex items-center justify-center gap-2 text-xs font-semibold py-2 hover:bg-brand-green-dark transition-colors"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
                 Ajouter

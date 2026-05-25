@@ -84,7 +84,7 @@ export default function ProductDetailPage() {
           <ChevronRight className="w-4 h-4" />
           <Link href="/boutique" className="hover:text-brand-green transition-colors">Boutique</Link>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
+          <span className="text-foreground font-medium truncate max-w-[100px] sm:max-w-[180px] md:max-w-[260px]">{product.name}</span>
         </nav>
 
         <div className="grid lg:grid-cols-2 gap-12 mb-20">
@@ -122,7 +122,7 @@ export default function ProductDetailPage() {
             </motion.div>
 
             {images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {images.map((img, i) => (
                   <button
                     key={img.id}

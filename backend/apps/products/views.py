@@ -87,15 +87,21 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminOrReadOnly])
     def add_image(self, request, slug=None):
+        from PIL import Image as PILImage
         product = self.get_object()
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'Image requise.'}, status=status.HTTP_400_BAD_REQUEST)
-        allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-        if image.content_type not in allowed_types:
-            return Response({'error': 'Format invalide. Utilisez JPEG, PNG ou WebP.'}, status=status.HTTP_400_BAD_REQUEST)
         if image.size > 5 * 1024 * 1024:
             return Response({'error': 'Image trop volumineuse (max 5 Mo).'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            pil_img = PILImage.open(image)
+            pil_img.verify()
+            if pil_img.format not in ('JPEG', 'PNG', 'WEBP', 'GIF'):
+                raise ValueError('Format non supporté')
+            image.seek(0)
+        except Exception:
+            return Response({'error': 'Fichier image invalide. Utilisez JPEG, PNG ou WebP.'}, status=status.HTTP_400_BAD_REQUEST)
         is_main = not product.images.exists()
         ProductImage.objects.create(product=product, image=image, is_main=is_main)
         return Response({'detail': 'Image ajoutée.'}, status=status.HTTP_201_CREATED)

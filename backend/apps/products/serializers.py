@@ -91,6 +91,7 @@ class WishlistSerializer(serializers.ModelSerializer):
 
 class ProductReviewSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    comment = serializers.CharField(max_length=1000)
 
     class Meta:
         model = ProductReview
