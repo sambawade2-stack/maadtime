@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { User, Package, Heart, MapPin, LogOut } from "lucide-react";
+import { User, Package, Heart, MapPin, LogOut, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { ordersApi } from "@/lib/api";
+import { ordersApi, authApi } from "@/lib/api";
 import { Order } from "@/types";
 import { formatPrice, formatDate, getOrderStatusColor } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -14,11 +14,40 @@ export default function ProfilPage() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const router = useRouter();
+  const [showPwdForm, setShowPwdForm] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [pwdData, setPwdData] = useState({ old_password: "", new_password: "", confirm: "" });
 
   useEffect(() => {
     if (!isAuthenticated) { router.push("/auth/connexion"); return; }
     ordersApi.list().then((r) => setOrders(r.data.results || r.data));
   }, [isAuthenticated, router]);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwdData.new_password !== pwdData.confirm) {
+      toast.error("Les nouveaux mots de passe ne correspondent pas.");
+      return;
+    }
+    if (pwdData.new_password.length < 8) {
+      toast.error("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    setPwdLoading(true);
+    try {
+      await authApi.changePassword(pwdData.old_password, pwdData.new_password);
+      toast.success("Mot de passe modifié avec succès !");
+      setPwdData({ old_password: "", new_password: "", confirm: "" });
+      setShowPwdForm(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.old_password?.[0] || err?.response?.data?.detail || "Erreur lors du changement.";
+      toast.error(msg);
+    } finally {
+      setPwdLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -91,6 +120,65 @@ export default function ProfilPage() {
               <p className="text-sm font-medium">{label}</p>
             </Link>
           ))}
+        </div>
+
+        {/* Change password */}
+        <div className="bg-white dark:bg-card rounded-2xl shadow-card mb-6 overflow-hidden">
+          <button
+            onClick={() => setShowPwdForm(!showPwdForm)}
+            className="w-full flex items-center justify-between p-5 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Lock className="w-5 h-5 text-brand-green" />
+              <span className="font-semibold text-sm">Changer le mot de passe</span>
+            </div>
+            <span className="text-xs text-muted-foreground">{showPwdForm ? "Fermer" : "Modifier"}</span>
+          </button>
+          {showPwdForm && (
+            <form onSubmit={handleChangePassword} className="px-5 pb-5 space-y-3 border-t border-border pt-4">
+              <div className="relative">
+                <input
+                  type={showOld ? "text" : "password"}
+                  placeholder="Ancien mot de passe"
+                  value={pwdData.old_password}
+                  onChange={(e) => setPwdData({ ...pwdData, old_password: e.target.value })}
+                  required
+                  className="w-full px-4 py-2.5 pr-10 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                />
+                <button type="button" onClick={() => setShowOld(!showOld)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {showOld ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showNew ? "text" : "password"}
+                  placeholder="Nouveau mot de passe"
+                  value={pwdData.new_password}
+                  onChange={(e) => setPwdData({ ...pwdData, new_password: e.target.value })}
+                  required
+                  className="w-full px-4 py-2.5 pr-10 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                />
+                <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <input
+                type="password"
+                placeholder="Confirmer le nouveau mot de passe"
+                value={pwdData.confirm}
+                onChange={(e) => setPwdData({ ...pwdData, confirm: e.target.value })}
+                required
+                className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              />
+              <button
+                type="submit"
+                disabled={pwdLoading}
+                className="btn-primary w-full justify-center py-2.5 text-sm"
+              >
+                {pwdLoading ? "Modification..." : "Modifier le mot de passe"}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Recent orders */}

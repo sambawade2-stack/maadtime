@@ -45,6 +45,8 @@ export const authApi = {
   logout: (refresh: string) => api.post("/auth/logout/", { refresh }),
   profile: () => api.get("/auth/profile/"),
   updateProfile: (data: object) => api.patch("/auth/profile/", data),
+  changePassword: (old_password: string, new_password: string) =>
+    api.post("/auth/change-password/", { old_password, new_password }),
 };
 
 export const productsApi = {
