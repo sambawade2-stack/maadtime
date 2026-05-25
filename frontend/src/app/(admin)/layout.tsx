@@ -37,6 +37,10 @@ const navSections = [
     label: "Rapports",
     items: [{ href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 }],
   },
+  {
+    label: "Compte",
+    items: [{ href: "/dashboard/profil", label: "Mon profil", icon: UserCircle }],
+  },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -143,13 +147,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         )}
-        <Link
-          href="/dashboard/profil"
-          className="flex items-center gap-2 text-sm text-background/60 hover:text-background transition-colors px-3 py-2 w-full rounded-xl hover:bg-background/10 mb-1"
-        >
-          <UserCircle className="w-4 h-4" />
-          Mon profil
-        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-background/60 hover:text-red-400 transition-colors px-3 py-2 w-full rounded-xl hover:bg-red-500/10"
