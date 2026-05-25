@@ -30,7 +30,7 @@ export default function LoginPage() {
       await login(data.email, data.password);
       toast.success("Connexion réussie !");
       const { user } = useAuthStore.getState();
-      router.push((user?.role === "admin" || user?.is_staff) ? "/dashboard" : "/profil");
+      router.push("/dashboard");
     } catch {
       toast.error("Email ou mot de passe incorrect.");
     }
@@ -47,7 +47,7 @@ export default function LoginPage() {
             <span className="font-display text-2xl font-bold text-brand-green">Maadtime</span>
           </Link>
           <h1 className="font-display text-2xl font-bold">Connexion</h1>
-          <p className="text-muted-foreground text-sm mt-1">Accédez à votre espace client</p>
+          <p className="text-muted-foreground text-sm mt-1">Accès administrateur</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-premium p-8">

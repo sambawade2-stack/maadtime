@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!user) {
       router.replace("/auth/connexion");
     } else if (user.role !== "admin" && !user.is_staff) {
-      router.replace("/profil");
+      router.replace("/");
     }
   }, [user, _hasHydrated, router]);
 
