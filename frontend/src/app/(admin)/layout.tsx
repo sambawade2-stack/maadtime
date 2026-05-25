@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Truck,
-  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell,
+  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell, UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -143,6 +143,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         )}
+        <Link
+          href="/dashboard/profil"
+          className="flex items-center gap-2 text-sm text-background/60 hover:text-background transition-colors px-3 py-2 w-full rounded-xl hover:bg-background/10 mb-1"
+        >
+          <UserCircle className="w-4 h-4" />
+          Mon profil
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-background/60 hover:text-red-400 transition-colors px-3 py-2 w-full rounded-xl hover:bg-red-500/10"
