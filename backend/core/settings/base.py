@@ -155,7 +155,14 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-REDIS_URL = config('REDIS_URL', default='redis://redis:6379/0')
+from urllib.parse import quote as _urlquote
+_redis_password = config('REDIS_PASSWORD', default='')
+_redis_host = config('REDIS_HOST', default='redis')
+REDIS_URL = (
+    f"redis://:{_urlquote(_redis_password, safe='')}@{_redis_host}:6379/0"
+    if _redis_password
+    else config('REDIS_URL', default='redis://redis:6379/0')
+)
 
 CACHES = {
     'default': {
