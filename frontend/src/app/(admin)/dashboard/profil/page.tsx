@@ -7,11 +7,30 @@ import { authApi } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function AdminProfilPage() {
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [nameLoading, setNameLoading] = useState(false);
   const [pwd, setPwd] = useState({ old_password: "", new_password: "", confirm: "" });
+  const [name, setName] = useState({
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
+  });
+
+  const handleUpdateName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNameLoading(true);
+    try {
+      const { data } = await authApi.updateProfile(name);
+      updateUser(data);
+      toast.success("Nom mis à jour !");
+    } catch {
+      toast.error("Erreur lors de la mise à jour.");
+    } finally {
+      setNameLoading(false);
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +42,7 @@ export default function AdminProfilPage() {
       toast.error("Minimum 8 caractères.");
       return;
     }
-    setLoading(true);
+    setPwdLoading(true);
     try {
       await authApi.changePassword(pwd.old_password, pwd.new_password);
       toast.success("Mot de passe modifié !");
@@ -32,7 +51,7 @@ export default function AdminProfilPage() {
       const msg = err?.response?.data?.old_password?.[0] || err?.response?.data?.detail || "Erreur lors du changement.";
       toast.error(msg);
     } finally {
-      setLoading(false);
+      setPwdLoading(false);
     }
   };
 
@@ -46,26 +65,46 @@ export default function AdminProfilPage() {
           <User className="w-5 h-5 text-brand-green" />
           Informations du compte
         </h2>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between py-2 border-b border-border">
-            <span className="text-muted-foreground">Nom</span>
-            <span className="font-medium">
-              {user?.first_name && user?.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : "—"}
-            </span>
-          </div>
-          <div className="flex justify-between py-2 border-b border-border">
-            <span className="text-muted-foreground">Email</span>
-            <span className="font-medium">{user?.email}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-muted-foreground">Rôle</span>
-            <span className="px-2 py-0.5 bg-brand-green/10 text-brand-green rounded-full text-xs font-semibold">
-              Administrateur
-            </span>
-          </div>
+        <div className="flex justify-between items-center py-2 border-b border-border mb-4 text-sm">
+          <span className="text-muted-foreground">Email</span>
+          <span className="font-medium">{user?.email}</span>
         </div>
+        <div className="flex justify-between items-center py-2 border-b border-border mb-4 text-sm">
+          <span className="text-muted-foreground">Rôle</span>
+          <span className="px-2 py-0.5 bg-brand-green/10 text-brand-green rounded-full text-xs font-semibold">
+            Administrateur
+          </span>
+        </div>
+        <form onSubmit={handleUpdateName} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Prénom</label>
+              <input
+                value={name.first_name}
+                onChange={(e) => setName({ ...name, first_name: e.target.value })}
+                placeholder="Prénom"
+                className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Nom</label>
+              <input
+                value={name.last_name}
+                onChange={(e) => setName({ ...name, last_name: e.target.value })}
+                placeholder="Nom"
+                className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={nameLoading}
+            className="btn-primary justify-center py-2 text-sm"
+          >
+            <Save className="w-4 h-4" />
+            {nameLoading ? "Enregistrement..." : "Enregistrer le nom"}
+          </button>
+        </form>
       </div>
 
       {/* Changer mot de passe */}
@@ -111,11 +150,11 @@ export default function AdminProfilPage() {
           />
           <button
             type="submit"
-            disabled={loading}
+            disabled={pwdLoading}
             className="btn-primary justify-center py-2.5 text-sm"
           >
             <Save className="w-4 h-4" />
-            {loading ? "Modification..." : "Modifier le mot de passe"}
+            {pwdLoading ? "Modification..." : "Modifier le mot de passe"}
           </button>
         </form>
       </div>
