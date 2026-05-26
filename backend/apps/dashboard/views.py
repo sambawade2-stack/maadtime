@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import permissions
+from rest_framework import permissions, status
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth, TruncDate
 from django.utils import timezone
@@ -186,3 +186,36 @@ class RecentOrdersView(APIView):
         orders = Order.objects.filter(**sf).select_related('user').order_by('-created_at')[:10]
         serializer = OrderListSerializer(orders, many=True)
         return Response(serializer.data)
+
+
+class AdminCreateOrderView(APIView):
+    """
+    Création d'une commande manuelle par l'admin / gérant (commande téléphonique).
+    L'utilisateur final est traité comme invité (user=None).
+    """
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        from apps.orders.serializers import CreateOrderSerializer
+        from apps.orders.serializers import OrderDetailSerializer
+
+        user = request.user
+
+        # Injecter le store dans les données si gérant (pas superadmin)
+        data = request.data.copy()
+        if not user.is_superuser:
+            store = getattr(user, 'store', None)
+            if store:
+                data['store_slug'] = store.slug
+            else:
+                return Response({'detail': 'Aucune boutique associée à ce compte.'}, status=400)
+
+        serializer = CreateOrderSerializer(
+            data=data,
+            context={'request': request, 'admin_order': True},
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        order = serializer.save()
+        return Response(OrderDetailSerializer(order).data, status=status.HTTP_201_CREATED)

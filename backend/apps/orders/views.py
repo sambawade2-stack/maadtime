@@ -76,11 +76,13 @@ class OrderViewSet(StoreFilterMixin, viewsets.ModelViewSet):
         with transaction.atomic():
             order.status = 'cancelled'
             order.save()
-            for item in order.items.all():
-                if item.product_id:
-                    Product.objects.filter(id=item.product_id).update(
-                        stock=models.F('stock') + item.quantity
-                    )
+            if order.store:
+                from apps.products.models import StoreInventory
+                for item in order.items.all():
+                    if item.product_id:
+                        StoreInventory.objects.filter(
+                            store=order.store, product_id=item.product_id
+                        ).update(stock=models.F('stock') + item.quantity)
         return Response({'detail': 'Commande annulée.'})
 
 

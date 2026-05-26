@@ -121,4 +121,6 @@ export const dashboardApi = {
   // Inventaire
   inventory: (params?: object) => api.get("/products/inventory/", { params }),
   updateInventory: (id: number, data: object) => api.patch(`/products/inventory/${id}/`, data),
+  // Commande manuelle (téléphonique)
+  createAdminOrder: (data: object) => api.post("/dashboard/orders/create/", data),
 };

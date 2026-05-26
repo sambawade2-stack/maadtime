@@ -75,7 +75,9 @@ class CreateOrderSerializer(serializers.Serializer):
         items_data = validated_data.pop('items')
         store_slug = validated_data.pop('store_slug', 'maadtime')
         request = self.context['request']
-        user = request.user if request.user.is_authenticated else None
+        # admin_order=True → commande téléphonique, user=None (invité)
+        admin_order = self.context.get('admin_order', False)
+        user = None if admin_order else (request.user if request.user.is_authenticated else None)
 
         # Déterminer la boutique
         try:
