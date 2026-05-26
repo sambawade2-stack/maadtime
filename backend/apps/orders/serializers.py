@@ -24,12 +24,13 @@ class OrderItemWriteSerializer(serializers.Serializer):
 class OrderListSerializer(serializers.ModelSerializer):
     items_count = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    store_name = serializers.CharField(source='store.name', read_only=True, default=None)
 
     class Meta:
         model = Order
         fields = [
             'id', 'order_number', 'status', 'status_display', 'total',
-            'items_count', 'city', 'full_name', 'phone', 'created_at'
+            'items_count', 'city', 'full_name', 'phone', 'store_name', 'created_at'
         ]
 
     def get_items_count(self, obj):
@@ -64,6 +65,18 @@ class CreateOrderSerializer(serializers.Serializer):
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError('La commande doit contenir au moins un article.')
+        # Tous les produits doivent appartenir à la même boutique
+        product_ids = [item['product_id'] for item in value]
+        from apps.products.models import Product as P
+        stores = set(
+            P.objects.filter(id__in=product_ids, is_active=True)
+            .values_list('store_id', flat=True)
+            .distinct()
+        )
+        if len(stores) > 1:
+            raise serializers.ValidationError(
+                'Tous les produits doivent appartenir à la même boutique.'
+            )
         return value
 
     def create(self, validated_data):

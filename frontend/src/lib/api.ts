@@ -115,7 +115,7 @@ export const dashboardApi = {
   allOrders: (params?: object) => api.get("/orders/", { params }),
   updateOrderStatus: (id: number, status: string) =>
     api.patch(`/orders/${id}/update_status/`, { status }),
-  customers: () => api.get("/customers/"),
+  customers: (params?: object) => api.get("/customers/", { params }),
   deliveries: () => api.get("/deliveries/"),
   deliveryZones: () => api.get("/deliveries/zones/"),
 };

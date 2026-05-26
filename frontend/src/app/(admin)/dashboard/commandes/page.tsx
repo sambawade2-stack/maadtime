@@ -109,8 +109,13 @@ export default function AdminOrdersPage() {
                 ))
               ) : orders.map((o) => (
                 <tr key={o.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3 font-mono font-bold text-brand-green text-xs">
-                    #{o.order_number}
+                  <td className="px-4 py-3">
+                    <p className="font-mono font-bold text-brand-green text-xs">#{o.order_number}</p>
+                    {o.store_name && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-brand-green/10 text-brand-green rounded-full font-medium">
+                        {o.store_name}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{o.full_name}</p>

@@ -13,37 +13,65 @@ class IsAdminUser(permissions.BasePermission):
 
 
 class CustomerListView(APIView):
+    """
+    Clients filtrés par boutique.
+    - Superadmin : tous les clients, ou ?store=<id> pour filtrer
+    - Gérant     : uniquement les clients de sa boutique
+    Retourne inscrits + invités (identifiés par téléphone).
+    """
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        user = request.user
+
+        # --- Déterminer le filtre boutique ---
+        if user.is_superuser:
+            store_id = request.query_params.get('store')
+            order_qs = Order.objects.filter(store_id=store_id) if store_id else Order.objects.all()
+        else:
+            if not getattr(user, 'store', None):
+                return Response([])
+            order_qs = Order.objects.filter(store=user.store)
+
         results = []
 
-        # Registered clients with order counts
-        registered = (
-            User.objects.filter(role='client')
-            .annotate(orders_count=Count('orders'), last_order=Max('orders__created_at'))
-            .order_by('-date_joined')
+        # --- Clients inscrits ayant commandé dans cette boutique ---
+        user_ids = (
+            order_qs.filter(user__isnull=False)
+            .values_list('user_id', flat=True)
+            .distinct()
         )
-        for u in registered:
+        for u in User.objects.filter(id__in=user_ids).order_by('-created_at'):
+            u_orders = order_qs.filter(user=u)
+            last_city = (
+                u_orders.order_by('-created_at')
+                .values_list('city', flat=True)
+                .first() or ''
+            )
             results.append({
                 'id': f'user-{u.id}',
                 'type': 'registered',
                 'name': f'{u.first_name} {u.last_name}'.strip() or u.username,
                 'email': u.email,
                 'phone': u.phone,
-                'city': '',
-                'orders_count': u.orders_count,
+                'city': last_city,
+                'orders_count': u_orders.count(),
                 'created_at': u.created_at.isoformat(),
             })
 
-        # Guest customers (ordered without account), unique by phone
-        seen_phones = set(u.phone for u in registered if u.phone)
-        guest_qs = (
-            Order.objects.filter(user__isnull=True)
-            .values('phone', 'full_name', 'city')
-            .annotate(orders_count=Count('id'), created_at=Max('created_at'))
-            .order_by('-created_at')
+        # --- Clients invités (sans compte, identifiés par téléphone) ---
+        registered_phones = set(
+            User.objects.filter(id__in=user_ids)
+            .exclude(phone='')
+            .values_list('phone', flat=True)
         )
+        guest_qs = (
+            order_qs.filter(user__isnull=True)
+            .values('phone', 'full_name', 'city')
+            .annotate(orders_count=Count('id'), last_order=Max('created_at'))
+            .order_by('-last_order')
+        )
+        seen_phones = set(registered_phones)
         for g in guest_qs:
             phone = g['phone']
             if phone in seen_phones:
@@ -57,7 +85,7 @@ class CustomerListView(APIView):
                 'phone': phone,
                 'city': g['city'],
                 'orders_count': g['orders_count'],
-                'created_at': g['created_at'].isoformat() if g['created_at'] else None,
+                'created_at': g['last_order'].isoformat() if g['last_order'] else None,
             })
 
         results.sort(key=lambda x: x['created_at'] or '', reverse=True)

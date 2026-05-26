@@ -163,6 +163,7 @@ export interface Order {
   total: number;
   items: OrderItem[];
   items_count?: number;
+  store_name?: string | null;
   created_at: string;
   updated_at: string;
 }
