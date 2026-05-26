@@ -115,8 +115,8 @@ class CreateOrderSerializer(serializers.Serializer):
                 subtotal += product.price * item_data['quantity']
                 order_items.append((product, item_data['quantity']))
 
-            delivery_fee = 1000 if subtotal < 20000 else 0
-            total = subtotal + delivery_fee
+            delivery_fee = 0
+            total = subtotal
 
             order = Order.objects.create(
                 user=user,
