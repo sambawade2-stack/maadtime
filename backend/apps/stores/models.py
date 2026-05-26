@@ -10,6 +10,7 @@ class Store(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     whatsapp = models.CharField(max_length=20, blank=True)
     address = models.CharField(max_length=300, blank=True)
+    regions = models.JSONField(default=list, blank=True)  # Régions du Sénégal couvertes par cette boutique
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

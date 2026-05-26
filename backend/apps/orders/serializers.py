@@ -73,17 +73,32 @@ class CreateOrderSerializer(serializers.Serializer):
         from django.db import transaction
 
         items_data = validated_data.pop('items')
-        store_slug = validated_data.pop('store_slug', 'maadtime')
+        store_slug = validated_data.pop('store_slug', None)
         request = self.context['request']
         # admin_order=True → commande téléphonique, user=None (invité)
         admin_order = self.context.get('admin_order', False)
         user = None if admin_order else (request.user if request.user.is_authenticated else None)
 
         # Déterminer la boutique
-        try:
-            store = Store.objects.get(slug=store_slug, is_active=True)
-        except Store.DoesNotExist:
-            store = Store.objects.filter(is_active=True).first()
+        # 1. Si store_slug explicite (admin), on l'utilise directement
+        # 2. Sinon, on cherche par région du client (city)
+        # 3. Fallback : boutique par défaut
+        store = None
+        if store_slug:
+            store = Store.objects.filter(slug=store_slug, is_active=True).first()
+
+        if not store:
+            city = validated_data.get('city', '')
+            if city:
+                # Cherche la boutique qui couvre cette région
+                for s in Store.objects.filter(is_active=True):
+                    if city in (s.regions or []):
+                        store = s
+                        break
+
+        if not store:
+            store = Store.objects.filter(is_active=True, slug='maadtime').first() \
+                    or Store.objects.filter(is_active=True).first()
 
         with transaction.atomic():
             product_ids = [item['product_id'] for item in items_data]

@@ -59,6 +59,7 @@ def store_stats(store, request):
         'phone': store.phone,
         'whatsapp': store.whatsapp,
         'address': store.address,
+        'regions': store.regions or [],
         'orders_total': orders.count(),
         'orders_pending': orders.filter(status='pending').count(),
         'orders_today': orders.filter(created_at__date=today).count(),

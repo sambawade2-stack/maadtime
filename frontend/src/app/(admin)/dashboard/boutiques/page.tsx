@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { storesApi } from "@/lib/api";
 import { StoreStats, StoreUser } from "@/types";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, REGIONS_SENEGAL } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 type Tab = "boutiques" | "gerants";
@@ -25,7 +25,7 @@ export default function BoutiquesPage() {
   const [editingStore, setEditingStore] = useState<StoreStats | null>(null);
   const [showPwd, setShowPwd] = useState(false);
 
-  const [storeForm, setStoreForm] = useState({ name: "", phone: "", whatsapp: "", address: "", description: "" });
+  const [storeForm, setStoreForm] = useState({ name: "", phone: "", whatsapp: "", address: "", description: "", regions: [] as string[] });
   const [userForm, setUserForm] = useState({ email: "", password: "", first_name: "", last_name: "", store_id: "" });
   const [expandedStock, setExpandedStock] = useState<number | null>(null);
 
@@ -52,7 +52,7 @@ export default function BoutiquesPage() {
       await storesApi.create(storeForm);
       toast.success("Boutique créée !");
       setShowStoreModal(false);
-      setStoreForm({ name: "", phone: "", whatsapp: "", address: "", description: "" });
+      setStoreForm({ name: "", phone: "", whatsapp: "", address: "", description: "", regions: [] });
       fetchAll();
     } catch {
       toast.error("Erreur lors de la création.");
@@ -75,8 +75,17 @@ export default function BoutiquesPage() {
 
   const openEdit = (store: StoreStats) => {
     setEditingStore(store);
-    setStoreForm({ name: store.name, phone: store.phone, whatsapp: store.whatsapp, address: store.address, description: "" });
+    setStoreForm({ name: store.name, phone: store.phone, whatsapp: store.whatsapp, address: store.address, description: "", regions: store.regions || [] });
     setShowStoreModal(true);
+  };
+
+  const toggleRegion = (region: string) => {
+    setStoreForm((f) => ({
+      ...f,
+      regions: f.regions.includes(region)
+        ? f.regions.filter((r) => r !== region)
+        : [...f.regions, region],
+    }));
   };
 
   const handleDeleteStore = async (id: number, name: string) => {
@@ -129,7 +138,7 @@ export default function BoutiquesPage() {
           <button onClick={() => { setShowUserModal(true); }} className="btn-secondary flex items-center gap-2 text-sm">
             <Users className="w-4 h-4" /> Ajouter gérant
           </button>
-          <button onClick={() => { setEditingStore(null); setStoreForm({ name: "", phone: "", whatsapp: "", address: "", description: "" }); setShowStoreModal(true); }} className="btn-primary flex items-center gap-2 text-sm">
+          <button onClick={() => { setEditingStore(null); setStoreForm({ name: "", phone: "", whatsapp: "", address: "", description: "", regions: [] }); setShowStoreModal(true); }} className="btn-primary flex items-center gap-2 text-sm">
             <Plus className="w-4 h-4" /> Nouvelle boutique
           </button>
         </div>
@@ -190,6 +199,13 @@ export default function BoutiquesPage() {
                       <div>
                         <p className="font-semibold">{store.name}</p>
                         {store.phone && <p className="text-xs text-muted-foreground">{store.phone}</p>}
+                        {store.regions?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {store.regions.map((r) => (
+                              <span key={r} className="px-1.5 py-0.5 bg-brand-green/10 text-brand-green rounded text-[10px] font-medium">{r}</span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -385,6 +401,31 @@ export default function BoutiquesPage() {
                 <label className="block text-sm font-medium mb-1.5">Adresse</label>
                 <input value={storeForm.address} onChange={(e) => setStoreForm({ ...storeForm, address: e.target.value })}
                   placeholder="Dakar, Sénégal" className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Régions couvertes
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">— les commandes de ces régions seront assignées à cette boutique</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {REGIONS_SENEGAL.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => toggleRegion(r)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                        storeForm.regions.includes(r)
+                          ? "bg-brand-green text-white border-brand-green"
+                          : "border-border text-muted-foreground hover:border-brand-green hover:text-brand-green"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                {storeForm.regions.length === 0 && (
+                  <p className="text-xs text-amber-500 mt-1.5">Aucune région sélectionnée — les commandes sans correspondance iront à la boutique par défaut.</p>
+                )}
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowStoreModal(false)} className="flex-1 py-2.5 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">Annuler</button>

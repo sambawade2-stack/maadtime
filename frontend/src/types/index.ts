@@ -31,6 +31,7 @@ export interface StoreStats {
   low_stock: number;
   out_of_stock: number;
   inventory: { product_name: string; stock: number }[];
+  regions: string[];
 }
 
 export interface StoreUser {
