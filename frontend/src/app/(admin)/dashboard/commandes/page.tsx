@@ -91,7 +91,7 @@ export default function AdminOrdersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["#Commande", "Client", "Ville", "Articles", "Total", "Statut", "Date", "Action"].map((h) => (
+                {["#Commande", "Client", "Région", "Articles", "Total", "Statut", "Date", "Action"].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">
                     {h}
                   </th>

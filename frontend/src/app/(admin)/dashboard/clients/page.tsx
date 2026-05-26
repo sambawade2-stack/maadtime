@@ -112,7 +112,7 @@ export default function AdminClientsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["Client", "Contact", "Ville", "Commandes", "Depuis le"].map((h) => (
+                {["Client", "Contact", "Région", "Commandes", "Depuis le"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 text-xs text-muted-foreground font-medium">{h}</th>
                 ))}
               </tr>

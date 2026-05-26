@@ -38,9 +38,8 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length) + "...";
 }
 
-export const CITIES_SENEGAL = [
-  "Dakar", "Thiès", "Diourbel", "Touba", "Louga", "Mbour",
-  "Kaolack", "Ziguinchor", "Saint-Louis", "Tambacounda", "Kolda",
-  "Fatick", "Kaffrine", "Matam", "Sédhiou", "Kédougou",
-  "Rufisque", "Pikine", "Guédiawaye", "Bargny",
+export const REGIONS_SENEGAL = [
+  "Dakar", "Thiès", "Diourbel", "Fatick", "Kaolack", "Kaffrine",
+  "Saint-Louis", "Louga", "Matam", "Tambacounda", "Kédougou",
+  "Kolda", "Sédhiou", "Ziguinchor",
 ];

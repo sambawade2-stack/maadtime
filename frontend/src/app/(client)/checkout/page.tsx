@@ -10,7 +10,7 @@ import { z } from "zod";
 import { MapPin, Phone, User, FileText, CheckCircle, Truck, Globe, Flag } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { ordersApi } from "@/lib/api";
-import { formatPrice, CITIES_SENEGAL } from "@/lib/utils";
+import { formatPrice, REGIONS_SENEGAL } from "@/lib/utils";
 import { CheckoutForm } from "@/types";
 import toast from "react-hot-toast";
 import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
@@ -20,7 +20,7 @@ const schema = z.object({
   phone: z.string().min(6, "Téléphone invalide").max(20),
   country: z.string().min(1, "Pays requis"),
   address_line: z.string().min(3, "Adresse requise"),
-  city: z.string().min(1, "Ville requise"),
+  city: z.string().min(1, "Région requise"),
   neighborhood: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -223,7 +223,7 @@ export default function CheckoutPage() {
                     {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
                   </div>
 
-                  {/* Pays (international) ou Ville dropdown (Sénégal) */}
+                  {/* Pays (international) ou Région dropdown (Sénégal) */}
                   {isInternational ? (
                     <>
                       <div>
@@ -261,15 +261,15 @@ export default function CheckoutPage() {
                     <>
                       <div>
                         <label className="block text-sm font-medium mb-1.5">
-                          Ville <span className="text-red-500">*</span>
+                          Région <span className="text-red-500">*</span>
                         </label>
                         <select
                           {...register("city")}
                           className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
                         >
-                          <option value="">Choisir une ville</option>
-                          {CITIES_SENEGAL.map((c) => (
-                            <option key={c} value={c}>{c}</option>
+                          <option value="">Choisir une région</option>
+                          {REGIONS_SENEGAL.map((r) => (
+                            <option key={r} value={r}>{r}</option>
                           ))}
                         </select>
                         {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}

@@ -254,7 +254,7 @@ export default function DashboardPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                {["Commande", "Client", "Ville", "Total", "Statut", "Date"].map((h) => (
+                {["Commande", "Client", "Région", "Total", "Statut", "Date"].map((h) => (
                   <th key={h} className="text-left px-6 py-3 text-muted-foreground font-medium text-xs">{h}</th>
                 ))}
               </tr>
