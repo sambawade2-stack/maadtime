@@ -20,11 +20,11 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'stock', 'is_active', 'is_featured', 'is_new']
+    list_display = ['name', 'category', 'price', 'total_stock', 'is_active', 'is_featured', 'is_new']
     list_filter = ['category', 'is_active', 'is_featured', 'is_new']
     search_fields = ['name', 'description']
     prepopulated_fields = {'slug': ('name',)}
-    list_editable = ['is_active', 'is_featured', 'stock']
+    list_editable = ['is_active', 'is_featured']
     inlines = [ProductImageInline]
 
 
