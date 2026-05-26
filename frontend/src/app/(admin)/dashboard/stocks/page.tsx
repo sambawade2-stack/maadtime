@@ -1,138 +1,229 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Package, TrendingDown } from "lucide-react";
-import { Product } from "@/types";
-import { dashboardApi } from "@/lib/api";
+import { AlertTriangle, Package, Search, Store, ChevronDown } from "lucide-react";
+import { dashboardApi, storesApi } from "@/lib/api";
+import { StoreStats } from "@/types";
+import { useAuthStore } from "@/stores/authStore";
 import toast from "react-hot-toast";
 
-export default function AdminStocksPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+interface InventoryItem {
+  id: number;
+  product: number;
+  product_name: string;
+  product_slug: string;
+  main_image: string | null;
+  category_name: string;
+  stock: number;
+}
 
-  const fetch = async () => {
+export default function AdminStocksPage() {
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.is_superuser;
+
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [stores, setStores] = useState<StoreStats[]>([]);
+  const [selectedStore, setSelectedStore] = useState<number | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [editing, setEditing] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      storesApi.overview().then((r) => setStores(r.data)).catch(() => {});
+    }
+  }, [isSuperAdmin]);
+
+  const fetchInventory = async () => {
     setLoading(true);
-    const { data } = await dashboardApi.products({ ordering: "stock", page_size: 100 });
-    setProducts(data.results || data);
-    setLoading(false);
+    try {
+      const params: Record<string, any> = {};
+      if (selectedStore) params.store_id = selectedStore;
+      const { data } = await dashboardApi.inventory(params);
+      setInventory(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetchInventory(); }, [selectedStore]);
 
-  const updateStock = async (slug: string, stock: number) => {
+  const updateStock = async (id: number) => {
+    const val = editing[id];
+    if (val === undefined) return;
+    const stock = parseInt(val);
+    if (isNaN(stock) || stock < 0) { toast.error("Stock invalide"); return; }
     try {
-      await dashboardApi.updateProduct(slug, { stock });
+      await dashboardApi.updateInventory(id, { stock });
       toast.success("Stock mis à jour");
-      fetch();
+      setEditing((prev) => { const n = { ...prev }; delete n[id]; return n; });
+      fetchInventory();
     } catch {
       toast.error("Erreur");
     }
   };
 
-  const outOfStock = products.filter((p) => p.stock === 0);
-  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= 5);
+  const filtered = inventory.filter((i) =>
+    i.product_name.toLowerCase().includes(search.toLowerCase()) ||
+    i.category_name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const outOfStock = filtered.filter((i) => i.stock === 0).length;
+  const lowStock = filtered.filter((i) => i.stock > 0 && i.stock <= 5).length;
+  const selectedStoreName = selectedStore ? stores.find((s) => s.id === selectedStore)?.name : null;
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="font-display text-2xl font-bold">Gestion des stocks</h1>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Stocks</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {selectedStoreName ? `Boutique : ${selectedStoreName}` : isSuperAdmin ? "Toutes les boutiques" : user?.store?.name}
+          </p>
+        </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
-          <AlertTriangle className="w-6 h-6 text-red-500 shrink-0" />
-          <div>
-            <p className="font-bold text-red-700">{outOfStock.length}</p>
-            <p className="text-xs text-red-600">Rupture de stock</p>
-          </div>
-        </div>
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center gap-3">
-          <TrendingDown className="w-6 h-6 text-orange-500 shrink-0" />
-          <div>
-            <p className="font-bold text-orange-700">{lowStock.length}</p>
-            <p className="text-xs text-orange-600">Stock faible (≤5)</p>
-          </div>
-        </div>
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
-          <Package className="w-6 h-6 text-green-600 shrink-0" />
-          <div>
-            <p className="font-bold text-green-700">
-              {products.filter((p) => p.stock > 5).length}
-            </p>
-            <p className="text-xs text-green-600">En stock normal</p>
-          </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          {isSuperAdmin && stores.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowPicker((v) => !v)}
+                className="flex items-center gap-2 bg-white dark:bg-card border border-border rounded-xl px-4 py-2 text-sm font-medium shadow-card hover:bg-muted/50 transition-colors"
+              >
+                <Store className="w-4 h-4 text-brand-green" />
+                {selectedStoreName || "Toutes les boutiques"}
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              {showPicker && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-card border border-border rounded-xl shadow-lg z-20 overflow-hidden">
+                  <button
+                    onClick={() => { setSelectedStore(null); setShowPicker(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors ${!selectedStore ? "font-semibold text-brand-green" : ""}`}
+                  >
+                    Toutes les boutiques
+                  </button>
+                  {stores.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setSelectedStore(s.id); setShowPicker(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-2 ${selectedStore === s.id ? "font-semibold text-brand-green" : ""}`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-brand-green shrink-0" />
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {outOfStock > 0 && (
+            <div className="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl px-4 py-2 text-sm font-medium">
+              <AlertTriangle className="w-4 h-4" />
+              {outOfStock} rupture{outOfStock > 1 ? "s" : ""}
+            </div>
+          )}
+          {lowStock > 0 && (
+            <div className="flex items-center gap-2 bg-orange-50 text-orange-600 rounded-xl px-4 py-2 text-sm font-medium">
+              <AlertTriangle className="w-4 h-4" />
+              {lowStock} stock faible
+            </div>
+          )}
         </div>
       </div>
 
       <div className="bg-white dark:bg-card rounded-2xl shadow-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Rechercher un produit..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+            />
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
-                {["Produit", "Catégorie", "Stock actuel", "Statut", "Modifier stock"].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 text-xs text-muted-foreground font-medium">
-                    {h}
-                  </th>
-                ))}
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Produit</th>
+                <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Catégorie</th>
+                <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Stock actuel</th>
+                <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Modifier</th>
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="border-b border-border/50 animate-pulse">
-                    <td colSpan={5} className="px-5 py-3">
-                      <div className="h-8 bg-muted rounded" />
-                    </td>
-                  </tr>
-                ))
-              ) : products.map((p) => (
-                <tr
-                  key={p.id}
-                  className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${
-                    p.stock === 0 ? "bg-red-50/50 dark:bg-red-900/10" : ""
-                  }`}
-                >
-                  <td className="px-5 py-3 font-medium">{p.name}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{p.category_name}</td>
-                  <td className="px-5 py-3">
-                    <span className={`font-bold ${
-                      p.stock === 0 ? "text-red-600" : p.stock <= 5 ? "text-orange-600" : "text-green-600"
-                    }`}>
-                      {p.stock}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">
-                    {p.stock === 0 ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                        Rupture
-                      </span>
-                    ) : p.stock <= 5 ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                        Faible
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        Normal
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        defaultValue={p.stock}
-                        min={0}
-                        className="w-20 px-2 py-1 border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-green"
-                        onBlur={(e) => {
-                          const val = parseInt(e.target.value);
-                          if (!isNaN(val) && val !== p.stock) updateStock(p.slug, val);
-                        }}
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {loading
+                ? [...Array(6)].map((_, i) => (
+                    <tr key={i} className="border-b border-border/50 animate-pulse">
+                      <td colSpan={4} className="px-4 py-3"><div className="h-10 bg-muted rounded" /></td>
+                    </tr>
+                  ))
+                : filtered.map((item) => {
+                    const isEditing = editing[item.id] !== undefined;
+                    const stockVal = isEditing ? editing[item.id] : item.stock.toString();
+                    return (
+                      <tr key={item.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-brand-beige rounded-lg overflow-hidden shrink-0">
+                              {item.main_image ? (
+                                <img src={item.main_image} alt={item.product_name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-lg">🌿</div>
+                              )}
+                            </div>
+                            <span className="font-medium text-sm">{item.product_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="bg-muted text-muted-foreground px-2 py-1 rounded-lg text-xs">
+                            {item.category_name || "—"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`font-bold text-sm ${
+                            item.stock === 0 ? "text-red-500" :
+                            item.stock <= 5 ? "text-orange-500" : "text-green-600"
+                          }`}>
+                            {item.stock === 0 && <AlertTriangle className="w-3 h-3 inline mr-1" />}
+                            {item.stock}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              value={stockVal}
+                              onChange={(e) => setEditing((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                              className="w-20 px-2 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                            />
+                            {isEditing && (
+                              <button
+                                onClick={() => updateStock(item.id)}
+                                className="px-3 py-1.5 bg-brand-green text-white text-xs font-medium rounded-lg hover:bg-brand-green/90 transition-colors"
+                              >
+                                Enregistrer
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
             </tbody>
           </table>
+          {!loading && filtered.length === 0 && (
+            <div className="text-center py-16">
+              <Package className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">Aucun produit trouvé</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

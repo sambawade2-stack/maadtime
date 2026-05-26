@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Address
-from apps.products.models import Product
+from apps.products.models import Product, StoreInventory
+from apps.stores.models import Store
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -60,44 +61,43 @@ class CreateOrderSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=100)
     neighborhood = serializers.CharField(max_length=100, required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
+    store_slug = serializers.CharField(max_length=100, required=False, default='maadtime')
     items = OrderItemWriteSerializer(many=True)
 
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError('La commande doit contenir au moins un article.')
-        # Tous les produits doivent appartenir à la même boutique
-        product_ids = [item['product_id'] for item in value]
-        from apps.products.models import Product as P
-        stores = set(
-            P.objects.filter(id__in=product_ids, is_active=True)
-            .values_list('store_id', flat=True)
-            .distinct()
-        )
-        if len(stores) > 1:
-            raise serializers.ValidationError(
-                'Tous les produits doivent appartenir à la même boutique.'
-            )
         return value
 
     def create(self, validated_data):
         from django.db import transaction
-        from apps.stores.models import Store
+
         items_data = validated_data.pop('items')
+        store_slug = validated_data.pop('store_slug', 'maadtime')
         request = self.context['request']
         user = request.user if request.user.is_authenticated else None
-        # Detect store from the first product ordered
-        store = None
-        if items_data:
-            from apps.products.models import Product as P
-            first = P.objects.filter(id=items_data[0]['product_id']).select_related('store').first()
-            if first:
-                store = first.store
+
+        # Déterminer la boutique
+        try:
+            store = Store.objects.get(slug=store_slug, is_active=True)
+        except Store.DoesNotExist:
+            store = Store.objects.filter(is_active=True).first()
 
         with transaction.atomic():
             product_ids = [item['product_id'] for item in items_data]
             products = {
-                p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids, is_active=True)
+                p.id: p for p in Product.objects.filter(id__in=product_ids, is_active=True)
             }
+
+            # Vérifier le stock dans l'inventaire de la boutique
+            inventories = {}
+            if store:
+                inventories = {
+                    inv.product_id: inv
+                    for inv in StoreInventory.objects.select_for_update().filter(
+                        store=store, product_id__in=product_ids
+                    )
+                }
 
             subtotal = 0
             order_items = []
@@ -108,26 +108,30 @@ class CreateOrderSerializer(serializers.Serializer):
                     raise serializers.ValidationError(
                         f"Produit introuvable ou indisponible (id={item_data['product_id']})."
                     )
-                if product.stock < item_data['quantity']:
-                    raise serializers.ValidationError(
-                        f"Stock insuffisant pour {product.name}. Disponible: {product.stock}"
-                    )
-                subtotal += product.price * item_data['quantity']
-                order_items.append((product, item_data['quantity']))
 
-            delivery_fee = 0
-            total = subtotal
+                quantity = item_data['quantity']
+                inv = inventories.get(product.id)
+
+                if inv is not None:
+                    if inv.stock < quantity:
+                        raise serializers.ValidationError(
+                            f"Stock insuffisant pour {product.name}. Disponible : {inv.stock}"
+                        )
+                # Si pas d'entrée StoreInventory → pas de vérification de stock (tolérance)
+
+                subtotal += product.price * quantity
+                order_items.append((product, quantity, inv))
 
             order = Order.objects.create(
                 user=user,
                 store=store,
                 subtotal=subtotal,
-                delivery_fee=delivery_fee,
-                total=total,
+                delivery_fee=0,
+                total=subtotal,
                 **validated_data
             )
 
-            for product, quantity in order_items:
+            for product, quantity, inv in order_items:
                 main_img = product.images.filter(is_main=True).first()
                 OrderItem.objects.create(
                     order=order,
@@ -138,7 +142,9 @@ class CreateOrderSerializer(serializers.Serializer):
                     quantity=quantity,
                     total=product.price * quantity,
                 )
-                product.stock -= quantity
-                product.save()
+                # Déduire du stock boutique
+                if inv is not None:
+                    inv.stock = max(0, inv.stock - quantity)
+                    inv.save()
 
         return order

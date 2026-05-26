@@ -47,9 +47,9 @@ def store_stats(store, request):
         'orders_today': orders.filter(created_at__date=today).count(),
         'revenue_total': float(revenue),
         'revenue_monthly': float(monthly),
-        'products_total': Product.objects.filter(store=store, is_active=True).count(),
-        'low_stock': Product.objects.filter(store=store, is_active=True, stock__lte=5, stock__gt=0).count(),
-        'out_of_stock': Product.objects.filter(store=store, is_active=True, stock=0).count(),
+        'products_total': Product.objects.filter(is_active=True).count(),
+        'low_stock': store.inventory.filter(product__is_active=True, stock__lte=5, stock__gt=0).count(),
+        'out_of_stock': store.inventory.filter(product__is_active=True, stock=0).count(),
     }
 
 

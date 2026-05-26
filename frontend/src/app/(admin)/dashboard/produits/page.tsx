@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 
 const EMPTY_FORM = {
   name: "", category: "", description: "", short_description: "",
-  price: "", compare_price: "", stock: "", weight: "",
+  price: "", compare_price: "", weight: "",
   is_active: true, is_featured: false, is_new: false,
 };
 
@@ -84,8 +84,8 @@ export default function AdminProductsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.price || !form.stock) {
-      toast.error("Nom, prix et stock sont obligatoires.");
+    if (!form.name || !form.price) {
+      toast.error("Nom et prix sont obligatoires.");
       return;
     }
     setSaving(true);
@@ -97,7 +97,6 @@ export default function AdminProductsPage() {
         short_description: form.short_description,
         price: parseFloat(form.price),
         compare_price: form.compare_price ? parseFloat(form.compare_price) : null,
-        stock: parseInt(form.stock),
         weight: form.weight,
         is_active: form.is_active,
         is_featured: form.is_featured,
@@ -239,9 +238,9 @@ export default function AdminProductsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`font-bold text-sm ${p.stock === 0 ? "text-red-500" : p.stock <= 5 ? "text-orange-500" : "text-green-600"}`}>
-                          {p.stock === 0 && <AlertTriangle className="w-3 h-3 inline mr-1" />}
-                          {p.stock}
+                        <span className={`font-bold text-sm ${(p.stock ?? 0) === 0 ? "text-red-500" : (p.stock ?? 0) <= 5 ? "text-orange-500" : "text-green-600"}`}>
+                          {(p.stock ?? 0) === 0 && <AlertTriangle className="w-3 h-3 inline mr-1" />}
+                          {p.stock ?? 0}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -378,7 +377,7 @@ export default function AdminProductsPage() {
                     </select>
                   </div>
 
-                  {/* Price + Compare price + Stock + Weight */}
+                  {/* Prix + Prix barré + Poids */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1.5">
@@ -402,19 +401,7 @@ export default function AdminProductsPage() {
                         className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1.5">
-                        Stock <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        value={form.stock}
-                        onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                        placeholder="50"
-                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
-                      />
-                    </div>
-                    <div>
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium mb-1.5">Poids / Contenance</label>
                       <input
                         value={form.weight}
@@ -424,6 +411,9 @@ export default function AdminProductsPage() {
                       />
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-4 py-2.5">
+                    💡 Le stock se définit par boutique dans la section <strong>Stocks</strong>.
+                  </p>
 
                   {/* Short description */}
                   <div>

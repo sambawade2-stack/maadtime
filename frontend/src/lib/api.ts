@@ -118,4 +118,7 @@ export const dashboardApi = {
   customers: (params?: object) => api.get("/customers/", { params }),
   deliveries: () => api.get("/deliveries/"),
   deliveryZones: () => api.get("/deliveries/zones/"),
+  // Inventaire
+  inventory: (params?: object) => api.get("/products/inventory/", { params }),
+  updateInventory: (id: number, data: object) => api.patch(`/products/inventory/${id}/`, data),
 };

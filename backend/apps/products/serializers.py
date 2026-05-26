@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, ProductImage, Wishlist, ProductReview
+from .models import Category, Product, ProductImage, StoreInventory, Wishlist, ProductReview
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -23,14 +23,16 @@ class ProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     main_image = serializers.SerializerMethodField()
     in_stock = serializers.BooleanField(read_only=True)
-    discount_percent = serializers.IntegerField(read_only=True)
+    discount_percent = serializers.IntegerField(read_only=True, allow_null=True)
+    # Stock de la boutique courante (injecté par la vue si contexte store)
+    stock = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'short_description', 'price', 'compare_price',
-            'category_name', 'main_image', 'in_stock', 'is_active', 'stock', 'discount_percent',
-            'is_featured', 'is_new', 'weight', 'created_at'
+            'category_name', 'main_image', 'in_stock', 'is_active', 'stock',
+            'discount_percent', 'is_featured', 'is_new', 'weight', 'created_at'
         ]
 
     def get_main_image(self, obj):
@@ -40,14 +42,22 @@ class ProductListSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(img.image.url) if request else img.image.url
         return None
 
+    def get_stock(self, obj):
+        store = self.context.get('store')
+        if store:
+            inv = obj.inventory.filter(store=store).first()
+            return inv.stock if inv else 0
+        return obj.total_stock
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     in_stock = serializers.BooleanField(read_only=True)
-    discount_percent = serializers.IntegerField(read_only=True)
+    discount_percent = serializers.IntegerField(read_only=True, allow_null=True)
     reviews_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
+    stock = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -55,8 +65,15 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'description', 'short_description',
             'price', 'compare_price', 'stock', 'weight', 'category',
             'images', 'in_stock', 'discount_percent', 'is_featured', 'is_new',
-            'reviews_count', 'average_rating', 'created_at', 'updated_at'
+            'is_active', 'reviews_count', 'average_rating', 'created_at', 'updated_at'
         ]
+
+    def get_stock(self, obj):
+        store = self.context.get('store')
+        if store:
+            inv = obj.inventory.filter(store=store).first()
+            return inv.stock if inv else 0
+        return obj.total_stock
 
     def get_reviews_count(self, obj):
         return obj.reviews.filter(is_approved=True).count()
@@ -73,9 +90,28 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'name', 'category', 'description', 'short_description',
-            'price', 'compare_price', 'stock', 'weight',
+            'price', 'compare_price', 'weight',
             'is_active', 'is_featured', 'is_new'
         ]
+
+
+class StoreInventorySerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_slug = serializers.CharField(source='product.slug', read_only=True)
+    main_image = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source='product.category.name', read_only=True, default='')
+
+    class Meta:
+        model = StoreInventory
+        fields = ['id', 'product', 'product_name', 'product_slug', 'main_image', 'category_name', 'stock']
+        read_only_fields = ['id', 'product', 'product_name', 'product_slug', 'main_image', 'category_name']
+
+    def get_main_image(self, obj):
+        img = obj.product.images.filter(is_main=True).first()
+        if img:
+            request = self.context.get('request')
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return None
 
 
 class WishlistSerializer(serializers.ModelSerializer):

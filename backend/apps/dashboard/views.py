@@ -77,7 +77,12 @@ class DashboardStatsView(APIView):
             Order.objects.filter(user__isnull=True, created_at__date__gte=last_30, **sf).values('phone').distinct().count()
         )
 
-        product_qs = Product.objects.filter(is_active=True, **sf)
+        from apps.products.models import StoreInventory
+        store_obj = sf.get('store')
+        if store_obj:
+            inv_qs = StoreInventory.objects.filter(store=store_obj, product__is_active=True)
+        else:
+            inv_qs = StoreInventory.objects.filter(product__is_active=True)
 
         return Response({
             'revenue': {
@@ -97,9 +102,9 @@ class DashboardStatsView(APIView):
                 'new_month': new_customers_month,
             },
             'products': {
-                'total': product_qs.count(),
-                'low_stock': product_qs.filter(stock__lte=5, stock__gt=0).count(),
-                'out_of_stock': product_qs.filter(stock=0).count(),
+                'total': Product.objects.filter(is_active=True).count(),
+                'low_stock': inv_qs.filter(stock__lte=5, stock__gt=0).count(),
+                'out_of_stock': inv_qs.filter(stock=0).count(),
             },
         })
 
