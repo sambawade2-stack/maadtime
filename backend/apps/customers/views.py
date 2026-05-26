@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Max
 from apps.authentication.models import User
+from apps.authentication.serializers import UserSerializer
 from apps.orders.models import Order
 
 
@@ -61,3 +62,9 @@ class CustomerListView(APIView):
 
         results.sort(key=lambda x: x['created_at'] or '', reverse=True)
         return Response(results)
+
+
+class CustomerDetailView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
