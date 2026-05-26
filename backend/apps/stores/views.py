@@ -57,6 +57,7 @@ class StoreViewSet(viewsets.ModelViewSet):
     serializer_class = StoreSerializer
     permission_classes = [IsSuperAdmin]
     queryset = Store.objects.all()
+    lookup_value_regex = r'\d+'
 
     @action(detail=True, methods=['get'])
     def stats(self, request, pk=None):
@@ -67,6 +68,27 @@ class StoreViewSet(viewsets.ModelViewSet):
     def overview(self, request):
         stores = Store.objects.all()
         return Response([store_stats(s, request) for s in stores])
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
+    def public(self, request):
+        slug = request.query_params.get('slug', 'maadtime')
+        try:
+            store = Store.objects.get(slug=slug, is_active=True)
+        except Store.DoesNotExist:
+            return Response({'error': 'Store not found'}, status=404)
+        logo_url = None
+        if store.logo:
+            try:
+                logo_url = request.build_absolute_uri(store.logo.url)
+            except Exception:
+                pass
+        return Response({
+            'name': store.name,
+            'phone': store.phone,
+            'whatsapp': store.whatsapp,
+            'address': store.address,
+            'logo': logo_url,
+        })
 
 
 class StoreUserViewSet(viewsets.ViewSet):

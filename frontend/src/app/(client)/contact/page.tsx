@@ -3,33 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Phone, MapPin, MessageCircle, Mail, Clock, Send, CheckCircle } from "lucide-react";
-
-const contactInfo = [
-  {
-    icon: Phone,
-    label: "Téléphone",
-    value: "+221 77 304 34 53",
-    href: "tel:+221773043453",
-  },
-  {
-    icon: MessageCircle,
-    label: "WhatsApp",
-    value: "+221 77 304 34 53",
-    href: "https://wa.me/221773043453",
-  },
-  {
-    icon: Mail,
-    label: "Email",
-    value: "contact@maadtime.com",
-    href: "mailto:contact@maadtime.com",
-  },
-  {
-    icon: MapPin,
-    label: "Localisation",
-    value: "Dakar, Sénégal",
-    href: null,
-  },
-];
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 
 const hours = [
   { day: "Lundi – Vendredi", time: "08h00 – 18h00" },
@@ -49,7 +23,15 @@ const subjects = [
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
   const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
+  const config = useStoreConfig();
+
+  const contactInfo = [
+    { icon: Phone, label: "Téléphone", value: config.phone, href: `tel:${config.phone}` },
+    { icon: MessageCircle, label: "WhatsApp", value: config.phone, href: waLink(config.whatsapp) },
+    { icon: Mail, label: "Email", value: "contact@maadtime.com", href: "mailto:contact@maadtime.com" },
+    { icon: MapPin, label: "Localisation", value: config.address || "Dakar, Sénégal", href: null },
+  ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -58,14 +40,14 @@ export default function ContactPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = encodeURIComponent(
-      `Bonjour Maadtime !\n\n` +
+      `Bonjour ${config.name} !\n\n` +
       `Nom : ${form.name}\n` +
       `Email : ${form.email}\n` +
       (form.phone ? `Téléphone : ${form.phone}\n` : "") +
       `Objet : ${form.subject}\n\n` +
       `Message :\n${form.message}`
     );
-    window.open(`https://wa.me/221773043453?text=${text}`, "_blank");
+    window.open(`${waLink(config.whatsapp)}?text=${text}`, "_blank");
     setSent(true);
   };
 
@@ -88,7 +70,6 @@ export default function ContactPage() {
         <div className="grid md:grid-cols-5 gap-8">
           {/* Left — infos */}
           <div className="md:col-span-2 space-y-6">
-            {/* Contact cards */}
             <div className="bg-white dark:bg-card rounded-2xl p-6 shadow-card space-y-4">
               <h2 className="font-semibold text-sm mb-2">Nos coordonnées</h2>
               {contactInfo.map(({ icon: Icon, label, value, href }) => (
@@ -133,7 +114,7 @@ export default function ContactPage() {
 
             {/* WhatsApp direct */}
             <a
-              href="https://wa.me/221773043453?text=Bonjour%20Maadtime%2C%20j%27ai%20une%20question"
+              href={waLink(config.whatsapp, `Bonjour ${config.name}, j'ai une question`)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-400 text-white py-3.5 rounded-2xl font-medium transition-colors shadow-card"
@@ -169,76 +150,43 @@ export default function ContactPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium mb-1.5">Nom complet *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        required
-                        value={form.name}
-                        onChange={handleChange}
+                      <input type="text" name="name" required value={form.name} onChange={handleChange}
                         placeholder="Votre nom"
-                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent"
-                      />
+                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium mb-1.5">Téléphone</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={form.phone}
-                        onChange={handleChange}
+                      <input type="tel" name="phone" value={form.phone} onChange={handleChange}
                         placeholder="+221 7X XXX XX XX"
-                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent"
-                      />
+                        className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent" />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium mb-1.5">Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={form.email}
-                      onChange={handleChange}
+                    <input type="email" name="email" required value={form.email} onChange={handleChange}
                       placeholder="votre@email.com"
-                      className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent"
-                    />
+                      className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent" />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium mb-1.5">Objet *</label>
-                    <select
-                      name="subject"
-                      required
-                      value={form.subject}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent"
-                    >
+                    <select name="subject" required value={form.subject} onChange={handleChange}
+                      className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent">
                       <option value="">Choisissez un objet</option>
-                      {subjects.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
+                      {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium mb-1.5">Message *</label>
-                    <textarea
-                      name="message"
-                      required
-                      rows={5}
-                      value={form.message}
-                      onChange={handleChange}
+                    <textarea name="message" required rows={5} value={form.message} onChange={handleChange}
                       placeholder="Décrivez votre demande en détail..."
-                      className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent resize-none"
-                    />
+                      className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-transparent resize-none" />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3.5 rounded-xl font-medium hover:bg-brand-green/90 disabled:opacity-50 transition-colors"
-                  >
+                  <button type="submit" disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 bg-brand-green text-white py-3.5 rounded-xl font-medium hover:bg-brand-green/90 disabled:opacity-50 transition-colors">
                     <Send className="w-4 h-4" />
                     Envoyer via WhatsApp
                   </button>

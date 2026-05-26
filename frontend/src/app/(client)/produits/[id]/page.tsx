@@ -13,6 +13,7 @@ import { Product } from "@/types";
 import { productsApi } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 import ProductCard from "@/components/boutique/ProductCard";
 import toast from "react-hot-toast";
 
@@ -27,6 +28,7 @@ export default function ProductDetailPage() {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const addItem = useCartStore((s) => s.addItem);
+  const config = useStoreConfig();
 
   useEffect(() => {
     productsApi
@@ -278,7 +280,7 @@ export default function ProductDetailPage() {
 
             {/* WhatsApp order */}
             <a
-              href={`https://wa.me/221773043453?text=Bonjour%20Maadtime%2C%20je%20veux%20commander%20${encodeURIComponent(product.name)}%20x${quantity}`}
+              href={waLink(config.whatsapp, `Bonjour ${config.name}, je veux commander ${product.name} x${quantity}`)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 py-3 px-6 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 transition-colors mb-8"

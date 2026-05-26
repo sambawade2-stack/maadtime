@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Leaf, Droplets, FlaskConical, Heart, Users, Award, Globe, ArrowRight, MessageCircle } from "lucide-react";
+import { Leaf, Droplets, FlaskConical, Heart, Users, Award, Globe, ArrowRight } from "lucide-react";
+import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 
 export const metadata: Metadata = {
   title: "À propos — Maadtime",
@@ -161,15 +162,7 @@ export default function AProposPage() {
           >
             Nous contacter
           </Link>
-          <a
-            href="https://wa.me/221773043453"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-green-400 transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            WhatsApp
-          </a>
+          <WhatsAppButton />
         </div>
       </section>
     </div>

@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Leaf, Phone, MapPin, Instagram, Facebook, MessageCircle } from "lucide-react";
 import { Category } from "@/types";
 import { productsApi } from "@/lib/api";
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 
 export default function Footer() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const config = useStoreConfig();
 
   useEffect(() => {
     productsApi.categories().then((r) => setCategories(r.data.results || r.data)).catch(() => {});
@@ -25,7 +27,7 @@ export default function Footer() {
                 <Leaf className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-display font-bold text-xl text-background">Maadtime</p>
+                <p className="font-display font-bold text-xl text-background">{config.name}</p>
                 <p className="text-xs text-background/60">100% Naturel</p>
               </div>
             </div>
@@ -35,7 +37,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-3">
               <a
-                href="https://wa.me/221773043453"
+                href={waLink(config.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center hover:bg-green-400 transition-colors"
@@ -107,17 +109,17 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-background/70">
                 <Phone className="w-4 h-4 text-brand-green-light shrink-0" />
-                <a href="tel:+221773043453" className="hover:text-background transition-colors">
-                  +221 77 304 34 53
+                <a href={`tel:${config.phone}`} className="hover:text-background transition-colors">
+                  {config.phone}
                 </a>
               </li>
               <li className="flex items-center gap-2 text-sm text-background/70">
                 <MapPin className="w-4 h-4 text-brand-green-light shrink-0" />
-                Sénégal
+                {config.address || "Sénégal"}
               </li>
             </ul>
             <a
-              href="https://wa.me/221773043453?text=Bonjour%20Maadtime%2C%20je%20veux%20commander"
+              href={waLink(config.whatsapp, `Bonjour ${config.name}, je veux commander`)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-400 transition-colors"
@@ -131,7 +133,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="py-6 border-t border-background/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-background/50">
-            © {new Date().getFullYear()} Maadtime. Tous droits réservés.
+            © {new Date().getFullYear()} {config.name}. Tous droits réservés.
           </p>
           <div className="flex items-center gap-4 text-sm text-background/50">
             <span>Produits 100% naturels</span>

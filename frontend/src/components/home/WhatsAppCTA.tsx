@@ -2,8 +2,11 @@
 
 import { motion } from "framer-motion";
 import { MessageCircle, ArrowRight } from "lucide-react";
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 
 export default function WhatsAppCTA() {
+  const config = useStoreConfig();
+
   return (
     <section className="py-20 bg-white dark:bg-card">
       <div className="max-w-4xl mx-auto px-4 text-center">
@@ -31,7 +34,7 @@ export default function WhatsAppCTA() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="https://wa.me/221773043453?text=Bonjour%20Maadtime%2C%20je%20voudrais%20passer%20une%20commande"
+                href={waLink(config.whatsapp, `Bonjour ${config.name}, je voudrais passer une commande`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 bg-white text-brand-green font-semibold px-8 py-4 rounded-xl hover:bg-brand-beige transition-colors"

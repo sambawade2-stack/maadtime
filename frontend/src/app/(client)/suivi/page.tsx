@@ -6,6 +6,7 @@ import { Search, Package, Truck, CheckCircle, Clock, XCircle, ChevronRight } fro
 import { ordersApi } from "@/lib/api";
 import { Order } from "@/types";
 import { formatPrice, formatDate } from "@/lib/utils";
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -31,6 +32,7 @@ function SuiviContent() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const config = useStoreConfig();
 
   const handleSearch = async (num?: string) => {
     const number = (num ?? input).trim().toUpperCase();
@@ -232,7 +234,7 @@ function SuiviContent() {
             <p className="text-center text-xs text-muted-foreground pb-4">
               Un problème ?{" "}
               <a
-                href="https://wa.me/221773043453"
+                href={waLink(config.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-brand-green hover:underline font-medium"

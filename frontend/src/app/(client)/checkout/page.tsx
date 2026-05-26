@@ -13,6 +13,7 @@ import { ordersApi } from "@/lib/api";
 import { formatPrice, CITIES_SENEGAL } from "@/lib/utils";
 import { CheckoutForm } from "@/types";
 import toast from "react-hot-toast";
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 
 const schema = z.object({
   full_name: z.string().min(2, "Nom requis"),
@@ -31,6 +32,7 @@ export default function CheckoutPage() {
   const [ordered, setOrdered] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [isInternational, setIsInternational] = useState(false);
+  const config = useStoreConfig();
 
   const {
     register,
@@ -88,7 +90,7 @@ export default function CheckoutPage() {
             <p className="text-muted-foreground">À la livraison — Aucun paiement immédiat requis.</p>
           </div>
           <a
-            href={`https://wa.me/221773043453?text=Bonjour%2C%20j%27ai%20pass%C3%A9%20la%20commande%20%23${orderNumber}`}
+            href={waLink(config.whatsapp, `Bonjour, j'ai passé la commande #${orderNumber}`)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary w-full justify-center mb-3"

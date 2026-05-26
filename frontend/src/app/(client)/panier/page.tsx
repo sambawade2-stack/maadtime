@@ -6,9 +6,11 @@ import { motion } from "framer-motion";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { formatPrice } from "@/lib/utils";
+import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
 
 export default function PanierPage() {
   const { items, removeItem, updateQuantity, subtotal, deliveryFee, total } = useCartStore();
+  const config = useStoreConfig();
 
   if (items.length === 0) {
     return (
@@ -118,7 +120,7 @@ export default function PanierPage() {
               </Link>
 
               <a
-                href={`https://wa.me/221773043453?text=Bonjour%2C%20je%20veux%20commander%20${encodeURIComponent(items.map(i => `${i.product.name} x${i.quantity}`).join(", "))}`}
+                href={waLink(config.whatsapp, `Bonjour, je veux commander ${items.map(i => `${i.product.name} x${i.quantity}`).join(", ")}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-center text-sm text-green-600 font-medium mt-3 hover:underline"
