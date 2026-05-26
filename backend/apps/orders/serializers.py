@@ -68,8 +68,17 @@ class CreateOrderSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         from django.db import transaction
+        from apps.stores.models import Store
         items_data = validated_data.pop('items')
-        user = self.context['request'].user if self.context['request'].user.is_authenticated else None
+        request = self.context['request']
+        user = request.user if request.user.is_authenticated else None
+        # Detect store from the first product ordered
+        store = None
+        if items_data:
+            from apps.products.models import Product as P
+            first = P.objects.filter(id=items_data[0]['product_id']).select_related('store').first()
+            if first:
+                store = first.store
 
         with transaction.atomic():
             product_ids = [item['product_id'] for item in items_data]
@@ -98,6 +107,7 @@ class CreateOrderSerializer(serializers.Serializer):
 
             order = Order.objects.create(
                 user=user,
+                store=store,
                 subtotal=subtotal,
                 delivery_fee=delivery_fee,
                 total=total,

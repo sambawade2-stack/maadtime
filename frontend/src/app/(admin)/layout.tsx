@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Truck,
-  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell, UserCircle,
+  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell, UserCircle, Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -16,6 +16,41 @@ const navSections = [
   {
     label: null,
     items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Boutique",
+    items: [
+      { href: "/dashboard/produits", label: "Produits", icon: Package },
+      { href: "/dashboard/categories", label: "Catégories", icon: Tag },
+      { href: "/dashboard/stocks", label: "Stocks", icon: AlertTriangle },
+    ],
+  },
+  {
+    label: "Ventes",
+    items: [
+      { href: "/dashboard/commandes", label: "Commandes", icon: ShoppingBag, badge: true },
+      { href: "/dashboard/livraisons", label: "Livraisons", icon: Truck },
+      { href: "/dashboard/clients", label: "Clients", icon: Users },
+    ],
+  },
+  {
+    label: "Rapports",
+    items: [{ href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 }],
+  },
+  {
+    label: "Compte",
+    items: [{ href: "/dashboard/profil", label: "Mon profil", icon: UserCircle }],
+  },
+];
+
+const superAdminSections = [
+  {
+    label: null,
+    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+  },
+  {
+    label: "Multi-boutiques",
+    items: [{ href: "/dashboard/boutiques", label: "Boutiques", icon: Store, superOnly: true }],
   },
   {
     label: "Boutique",
@@ -74,6 +109,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push("/auth/connexion");
   };
 
+  const isSuperAdmin = user?.is_superuser;
+  const activeSections = isSuperAdmin ? superAdminSections : navSections;
+
   const Sidebar = () => (
     <div className="flex flex-col h-full bg-foreground dark:bg-card text-background">
       {/* Logo */}
@@ -84,14 +122,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div>
             <p className="font-display font-bold text-background leading-none">Maadtime</p>
-            <p className="text-[10px] text-background/50 mt-0.5">Admin</p>
+            <p className="text-[10px] text-background/50 mt-0.5">
+              {isSuperAdmin ? "Propriétaire" : user?.store?.name || "Admin"}
+            </p>
           </div>
         </Link>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
-        {navSections.map((section, si) => (
+        {activeSections.map((section, si) => (
           <div key={si}>
             {section.label && (
               <p className="text-[10px] font-semibold uppercase tracking-widest text-background/30 px-3 mb-1">
@@ -99,7 +139,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
             )}
             <div className="space-y-0.5">
-              {section.items.map(({ href, label, icon: Icon, badge }: any) => {
+              {section.items.map(({ href, label, icon: Icon, badge, superOnly }: any) => {
                 const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
                 const showBadge = badge && newOrdersCount > 0;
                 return (

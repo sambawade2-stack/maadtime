@@ -1,5 +1,6 @@
 from rest_framework import generics, viewsets, permissions, status
 from django.db import models
+from apps.stores.mixins import StoreFilterMixin
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -17,7 +18,7 @@ class IsAdminUser(permissions.BasePermission):
         return request.user.is_authenticated and request.user.is_admin_user
 
 
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(StoreFilterMixin, viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status']
     search_fields = ['order_number', 'full_name', 'phone']
@@ -34,7 +35,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Order.objects.none()
         if user.is_admin_user:
-            return Order.objects.all().prefetch_related('items')
+            qs = Order.objects.all().prefetch_related('items')
+            return self.filter_queryset_by_store(qs)
         return Order.objects.filter(user=user).prefetch_related('items')
 
     def get_serializer_class(self):

@@ -73,6 +73,20 @@ export const ordersApi = {
   createAddress: (data: object) => api.post("/orders/addresses/", data),
 };
 
+export const storesApi = {
+  list: () => api.get("/stores/"),
+  create: (data: object) => api.post("/stores/", data),
+  update: (id: number, data: object) => api.patch(`/stores/${id}/`, data),
+  delete: (id: number) => api.delete(`/stores/${id}/`),
+  stats: (id: number) => api.get(`/stores/${id}/stats/`),
+  overview: () => api.get("/stores/overview/"),
+  // Gérants
+  listUsers: () => api.get("/stores/users/"),
+  createUser: (data: object) => api.post("/stores/users/", data),
+  updateUser: (id: number, data: object) => api.patch(`/stores/users/${id}/`, data),
+  deleteUser: (id: number) => api.delete(`/stores/users/${id}/`),
+};
+
 export const dashboardApi = {
   stats: (params?: object) => api.get("/dashboard/stats/", { params }),
   salesChart: (period?: string, params?: object) => api.get("/dashboard/sales-chart/", { params: { period, ...params } }),

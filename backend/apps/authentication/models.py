@@ -11,6 +11,10 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='client')
+    store = models.ForeignKey(
+        'stores.Store', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='staff',
+    )
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

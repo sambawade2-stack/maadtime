@@ -3,6 +3,7 @@ from django.utils.text import slugify
 
 
 class Category(models.Model):
+    store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, null=True, blank=True, related_name='categories')
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True)
@@ -26,6 +27,7 @@ class Category(models.Model):
 
 
 class Product(models.Model):
+    store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, null=True, blank=True, related_name='products')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)

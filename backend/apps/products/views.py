@@ -9,6 +9,7 @@ from .serializers import (
     CategorySerializer, ProductListSerializer, ProductDetailSerializer,
     ProductWriteSerializer, WishlistSerializer, ProductReviewSerializer
 )
+from apps.stores.mixins import StoreFilterMixin
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -34,15 +35,21 @@ class ProductFilter(filters.FilterSet):
         return queryset.filter(stock=0)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.filter(is_active=True)
+class CategoryViewSet(StoreFilterMixin, viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'slug'
 
+    def get_queryset(self):
+        qs = Category.objects.filter(is_active=True)
+        return self.filter_queryset_by_store(qs)
 
-class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.filter(is_active=True).select_related('category').prefetch_related('images')
+    def perform_create(self, serializer):
+        store = self.get_current_store()
+        serializer.save(store=store)
+
+
+class ProductViewSet(StoreFilterMixin, viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
@@ -58,20 +65,24 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductWriteSerializer
         return ProductDetailSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.is_admin_user:
+            base = Product.objects.all()
+        else:
+            base = Product.objects.filter(is_active=True)
+        base = base.select_related('category').prefetch_related('images')
+        return self.filter_queryset_by_store(base)
+
     def create(self, request, *args, **kwargs):
         serializer = ProductWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        product = serializer.save()
+        store = self.get_current_store()
+        product = serializer.save(store=store)
         return Response(
             ProductDetailSerializer(product, context={'request': request}).data,
             status=status.HTTP_201_CREATED
         )
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_authenticated and self.request.user.is_admin_user:
-            return Product.objects.all().select_related('category').prefetch_related('images')
-        return qs
 
     @action(detail=False, methods=['get'])
     def featured(self, request):
