@@ -87,7 +87,7 @@ export interface Product {
   short_description: string;
   price: number;
   compare_price: number | null;
-  stock: number;
+  stock: number;  // stock total ou par boutique selon le contexte
   weight: string;
   category: Category;
   category_name?: string;

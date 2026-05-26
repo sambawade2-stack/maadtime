@@ -65,7 +65,6 @@ export default function AdminProductsPage() {
       short_description: p.short_description || "",
       price: p.price.toString(),
       compare_price: p.compare_price?.toString() || "",
-      stock: p.stock.toString(),
       weight: p.weight || "",
       is_active: p.is_active,
       is_featured: p.is_featured,
