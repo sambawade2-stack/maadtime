@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [showStorePicker, setShowStorePicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Fetch stores list for superadmin
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function DashboardPage() {
       setError(true);
       setLoading(false);
     });
-  }, [selectedStore]);
+  }, [selectedStore, retryCount]);
 
   const selectedStoreName = selectedStore
     ? stores.find((s) => s.id === selectedStore)?.name
@@ -80,7 +81,7 @@ export default function DashboardPage() {
           <p className="font-semibold text-red-700 dark:text-red-400 mb-1">Impossible de charger les données</p>
           <p className="text-sm text-red-500 mb-4">Vérifiez que le backend est en ligne et que vous êtes connecté.</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => setRetryCount((n) => n + 1)}
             className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors"
           >
             Réessayer

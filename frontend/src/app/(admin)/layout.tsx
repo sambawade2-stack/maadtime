@@ -81,11 +81,16 @@ const superAdminSections = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, logout, _hasHydrated } = useAuthStore();
+  const { user, logout, checkAuth, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const { newOrdersCount, clearNewOrders } = useNotificationStore();
 
   useOrderPolling();
+
+  // Vérifier la session au montage (rafraîchit le token si nécessaire)
+  useEffect(() => {
+    if (_hasHydrated) checkAuth();
+  }, [_hasHydrated]);
 
   useEffect(() => {
     if (!_hasHydrated) return;
