@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('products', '0003_store_fk'),
-        ('stores', '0001_initial'),
+        ('stores', '0002_seed_default_store'),
     ]
 
     operations = [
