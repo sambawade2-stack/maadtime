@@ -127,9 +127,14 @@ export default function AdminProductsPage() {
       setModalOpen(false);
       fetchProducts();
     } catch (err: any) {
-      const msg = err.response?.data
-        ? JSON.stringify(err.response.data)
-        : "Erreur lors de la sauvegarde";
+      const d = err.response?.data;
+      const msg = !d
+        ? "Erreur lors de la sauvegarde"
+        : typeof d === "string" && d.includes("<!doctype")
+          ? "Erreur serveur (500) — vérifiez les logs backend"
+          : typeof d === "object"
+            ? Object.values(d).flat().join(" · ")
+            : String(d);
       toast.error(msg);
     } finally {
       setSaving(false);

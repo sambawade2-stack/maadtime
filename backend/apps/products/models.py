@@ -2,6 +2,21 @@ from django.db import models
 from django.utils.text import slugify
 
 
+def _unique_slug(model_class, name, pk=None):
+    base = slugify(name) or "produit"
+    slug, n = base, 1
+    qs = model_class.objects.filter(slug=slug)
+    if pk:
+        qs = qs.exclude(pk=pk)
+    while qs.exists():
+        slug = f"{base}-{n}"
+        n += 1
+        qs = model_class.objects.filter(slug=slug)
+        if pk:
+            qs = qs.exclude(pk=pk)
+    return slug
+
+
 class Category(models.Model):
     store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, null=True, blank=True, related_name='categories')
     name = models.CharField(max_length=100)
@@ -19,7 +34,7 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = _unique_slug(Category, self.name, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -50,7 +65,7 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = _unique_slug(Product, self.name, self.pk)
         super().save(*args, **kwargs)
 
     def __str__(self):
