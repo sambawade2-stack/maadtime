@@ -401,11 +401,11 @@ export default function AdminOrdersPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-muted-foreground mb-1">Quartier</label>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Ville</label>
                       <input
                         value={client.neighborhood}
                         onChange={(e) => setClient({ ...client, neighborhood: e.target.value })}
-                        placeholder="Quartier (optionnel)"
+                        placeholder="Ville (optionnel)"
                         className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
                       />
                     </div>

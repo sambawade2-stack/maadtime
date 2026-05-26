@@ -275,10 +275,10 @@ export default function CheckoutPage() {
                         {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1.5">Quartier</label>
+                        <label className="block text-sm font-medium mb-1.5">Ville</label>
                         <input
                           {...register("neighborhood")}
-                          placeholder="Quartier (optionnel)"
+                          placeholder="Ville (optionnel)"
                           className="w-full px-4 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
                         />
                       </div>
