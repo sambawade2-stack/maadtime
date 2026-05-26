@@ -23,11 +23,14 @@ export interface StoreStats {
   orders_total: number;
   orders_pending: number;
   orders_today: number;
+  orders_week: number;
   revenue_total: number;
   revenue_monthly: number;
+  revenue_daily: number;
   products_total: number;
   low_stock: number;
   out_of_stock: number;
+  inventory: { product_name: string; stock: number }[];
 }
 
 export interface StoreUser {

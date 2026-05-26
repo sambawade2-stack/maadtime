@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Store, Plus, Users, Package, ShoppingBag,
-  TrendingUp, AlertTriangle, CheckCircle, XCircle,
-  Edit, Trash2, X, Eye, EyeOff, Phone, MapPin
+  TrendingUp, CheckCircle, XCircle,
+  Edit, Trash2, X, Eye, EyeOff, ChevronDown, ChevronUp,
+  Calendar, BarChart2, AlertTriangle
 } from "lucide-react";
 import { storesApi } from "@/lib/api";
 import { StoreStats, StoreUser } from "@/types";
@@ -26,6 +27,7 @@ export default function BoutiquesPage() {
 
   const [storeForm, setStoreForm] = useState({ name: "", phone: "", whatsapp: "", address: "", description: "" });
   const [userForm, setUserForm] = useState({ email: "", password: "", first_name: "", last_name: "", store_id: "" });
+  const [expandedStock, setExpandedStock] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAll();
@@ -203,34 +205,101 @@ export default function BoutiquesPage() {
                     </div>
                   </div>
 
-                  {/* Stats */}
-                  <div className="p-5 grid grid-cols-2 gap-3 text-sm">
-                    <div className="bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Revenu mensuel</p>
-                      <p className="font-bold text-brand-green">{formatPrice(store.revenue_monthly)}</p>
-                    </div>
-                    <div className="bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Commandes</p>
-                      <p className="font-bold">{store.orders_total} <span className="text-xs font-normal text-amber-500">({store.orders_pending} en attente)</span></p>
-                    </div>
-                    <div className="bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Produits actifs</p>
-                      <p className="font-bold">{store.products_total}</p>
-                    </div>
-                    <div className="bg-muted/50 rounded-xl p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Stock critique</p>
-                      <p className={`font-bold ${store.low_stock + store.out_of_stock > 0 ? "text-red-500" : "text-green-500"}`}>
-                        {store.out_of_stock} rupture · {store.low_stock} faible
-                      </p>
+                  {/* Revenus */}
+                  <div className="px-5 pt-4 pb-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                      <BarChart2 className="w-3.5 h-3.5" /> Revenus
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-brand-green/8 rounded-xl p-3">
+                        <p className="text-xs text-muted-foreground mb-0.5">Aujourd&apos;hui</p>
+                        <p className="font-bold text-brand-green text-sm">{formatPrice(store.revenue_daily)}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-xs text-muted-foreground mb-0.5">Ce mois</p>
+                        <p className="font-bold text-sm">{formatPrice(store.revenue_monthly)}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Aujourd'hui */}
-                  <div className="px-5 pb-5">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-3">
-                      <span>Commandes aujourd&apos;hui</span>
-                      <span className="font-semibold text-foreground">{store.orders_today}</span>
+                  {/* Commandes */}
+                  <div className="px-5 pb-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                      <ShoppingBag className="w-3.5 h-3.5" /> Commandes
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-muted/50 rounded-xl p-2">
+                        <p className="text-xs text-muted-foreground">Aujourd&apos;hui</p>
+                        <p className="font-bold text-sm mt-0.5">{store.orders_today}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-xl p-2">
+                        <p className="text-xs text-muted-foreground">Semaine</p>
+                        <p className="font-bold text-sm mt-0.5">{store.orders_week}</p>
+                      </div>
+                      <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-2">
+                        <p className="text-xs text-amber-600">En attente</p>
+                        <p className="font-bold text-sm mt-0.5 text-amber-600">{store.orders_pending}</p>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Stock par produit */}
+                  <div className="px-5 pb-4 border-t border-border pt-3">
+                    <button
+                      onClick={() => setExpandedStock(expandedStock === store.id ? null : store.id)}
+                      className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 hover:text-foreground transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5" />
+                        Stock par produit
+                        {store.out_of_stock > 0 && (
+                          <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px] font-bold">
+                            {store.out_of_stock} rupture
+                          </span>
+                        )}
+                        {store.low_stock > 0 && (
+                          <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded-full text-[10px] font-bold">
+                            {store.low_stock} faible
+                          </span>
+                        )}
+                      </span>
+                      {expandedStock === store.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+
+                    {expandedStock === store.id && (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        {store.inventory.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-3">Aucun stock enregistré</p>
+                        ) : store.inventory.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm px-2 py-1.5 rounded-lg hover:bg-muted/50">
+                            <span className="truncate text-xs flex-1 mr-2">{item.product_name}</span>
+                            <span className={`text-xs font-semibold whitespace-nowrap px-2 py-0.5 rounded-full ${
+                              item.stock === 0
+                                ? "bg-red-100 text-red-600"
+                                : item.stock <= 5
+                                ? "bg-amber-100 text-amber-600"
+                                : "bg-green-100 text-green-700"
+                            }`}>
+                              {item.stock === 0 ? "Rupture" : `${item.stock} unité${item.stock > 1 ? "s" : ""}`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {expandedStock !== store.id && (
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className={store.out_of_stock > 0 ? "text-red-500 font-medium" : "text-green-600"}>
+                          {store.out_of_stock} rupture
+                        </span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className={store.low_stock > 0 ? "text-amber-500 font-medium" : "text-green-600"}>
+                          {store.low_stock} faible
+                        </span>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="text-muted-foreground">{store.inventory.length} produit{store.inventory.length > 1 ? "s" : ""}</span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}

@@ -20,11 +20,13 @@ class IsSuperAdmin(permissions.BasePermission):
 def store_stats(store, request):
     today = timezone.now().date()
     last_30 = today - timedelta(days=30)
+    last_7 = today - timedelta(days=6)
     active = ['confirmed', 'processing', 'shipped', 'delivered']
 
     orders = Order.objects.filter(store=store)
     revenue = orders.filter(status__in=active).aggregate(t=Sum('total'))['t'] or 0
     monthly = orders.filter(status__in=active, created_at__date__gte=last_30).aggregate(t=Sum('total'))['t'] or 0
+    daily = orders.filter(status__in=active, created_at__date=today).aggregate(t=Sum('total'))['t'] or 0
 
     logo_url = None
     if store.logo:
@@ -32,6 +34,21 @@ def store_stats(store, request):
             logo_url = request.build_absolute_uri(store.logo.url)
         except Exception:
             pass
+
+    # Stock par produit pour cette boutique
+    inventory_qs = (
+        store.inventory
+        .filter(product__is_active=True)
+        .select_related('product')
+        .order_by('stock', 'product__name')
+    )
+    inventory = [
+        {
+            'product_name': inv.product.name,
+            'stock': inv.stock,
+        }
+        for inv in inventory_qs
+    ]
 
     return {
         'id': store.id,
@@ -45,11 +62,14 @@ def store_stats(store, request):
         'orders_total': orders.count(),
         'orders_pending': orders.filter(status='pending').count(),
         'orders_today': orders.filter(created_at__date=today).count(),
+        'orders_week': orders.filter(created_at__date__gte=last_7).count(),
         'revenue_total': float(revenue),
         'revenue_monthly': float(monthly),
+        'revenue_daily': float(daily),
         'products_total': Product.objects.filter(is_active=True).count(),
         'low_stock': store.inventory.filter(product__is_active=True, stock__lte=5, stock__gt=0).count(),
         'out_of_stock': store.inventory.filter(product__is_active=True, stock=0).count(),
+        'inventory': inventory,
     }
 
 
