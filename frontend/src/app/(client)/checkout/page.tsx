@@ -149,14 +149,11 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div className="space-y-2 text-sm border-t border-border pt-4">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Livraison</span>
-                  <span className="text-green-600 font-medium">Gratuite</span>
-                </div>
                 <div className="flex justify-between font-bold text-base">
                   <span>Total</span>
                   <span className="text-brand-green">{formatPrice(subtotal())}</span>
                 </div>
+                <p className="text-xs text-muted-foreground">Frais de livraison payés à la réception</p>
               </div>
             </div>
           </div>
