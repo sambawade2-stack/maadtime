@@ -25,8 +25,13 @@ async function fetchConfig(): Promise<StoreConfig> {
     const slug = process.env.NEXT_PUBLIC_STORE_SLUG || "maadtime";
     const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     fetchPromise = fetch(`${base}/stores/public/?slug=${slug}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) return DEFAULT;
+        return r.json();
+      })
       .then((data: StoreConfig) => {
+        // Vérifier que la réponse est un vrai store (pas une erreur DRF)
+        if (!data?.name) return DEFAULT;
         cache = data;
         return data;
       })
@@ -45,8 +50,8 @@ export function useStoreConfig() {
   return config;
 }
 
-export function waLink(whatsapp: string, text?: string) {
-  const num = whatsapp.replace(/\D/g, "");
+export function waLink(whatsapp: string | undefined | null, text?: string) {
+  const num = (whatsapp ?? DEFAULT.whatsapp).replace(/\D/g, "");
   return text
     ? `https://wa.me/${num}?text=${encodeURIComponent(text)}`
     : `https://wa.me/${num}`;
