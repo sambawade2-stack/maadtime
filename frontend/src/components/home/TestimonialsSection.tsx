@@ -9,7 +9,7 @@ const testimonials = [
     city: "Dakar",
     rating: 5,
     comment:
-      "L'huile de maad est exceptionnelle ! Ma peau est beaucoup plus hydratée et lumineuse depuis que je l'utilise. Je recommande vivement !",
+      "Les produits Maadtime sont exceptionnels ! Une qualité 100% naturelle qu'on ne trouve nulle part ailleurs. Je recommande vivement à toute ma famille !",
     avatar: "F",
   },
   {
@@ -17,7 +17,7 @@ const testimonials = [
     city: "Thiès",
     rating: 5,
     comment:
-      "J'ai commandé le maad naturel et la livraison était super rapide. Le produit est frais et de très bonne qualité. Bravo Maadtime !",
+      "Livraison rapide et produits frais à la réception. Le goût du maad est authentique, exactement comme on l'aime. Bravo Maadtime !",
     avatar: "M",
   },
   {
@@ -25,7 +25,7 @@ const testimonials = [
     city: "Mbour",
     rating: 5,
     comment:
-      "Le savon au maad est merveilleux. Il sent bon et ma peau est douce comme jamais. Je suis une cliente fidèle depuis 6 mois !",
+      "Je commande régulièrement depuis 6 mois, jamais déçue. Des produits naturels, savoureux et livrés dans les délais. Une équipe au top !",
     avatar: "A",
   },
 ];
