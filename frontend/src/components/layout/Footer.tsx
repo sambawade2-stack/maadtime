@@ -32,8 +32,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-background/70 text-sm leading-relaxed mb-6">
-              Le goût naturel du maad sénégalais. Des produits locaux, naturels et de qualité
-              pour votre bien-être.
+              Le goût naturel du maad sénégalais 🇸🇳 Des produits locaux, naturels et de qualité ! Des saveurs naturelles qui réveillent les papilles.
             </p>
             <div className="flex items-center gap-3">
               <a
