@@ -61,7 +61,7 @@ class CreateOrderSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=100)
     neighborhood = serializers.CharField(max_length=100, required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
-    store_slug = serializers.CharField(max_length=100, required=False, default='maadtime')
+    store_slug = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     items = OrderItemWriteSerializer(many=True)
 
     def validate_items(self, value):
@@ -73,16 +73,16 @@ class CreateOrderSerializer(serializers.Serializer):
         from django.db import transaction
 
         items_data = validated_data.pop('items')
-        store_slug = validated_data.pop('store_slug', None)
+        store_slug = validated_data.pop('store_slug', '') or ''
         request = self.context['request']
         # admin_order=True → commande téléphonique, user=None (invité)
         admin_order = self.context.get('admin_order', False)
         user = None if admin_order else (request.user if request.user.is_authenticated else None)
 
         # Déterminer la boutique
-        # 1. Si store_slug explicite (admin), on l'utilise directement
-        # 2. Sinon, on cherche par région du client (city)
-        # 3. Fallback : boutique par défaut
+        # 1. Si store_slug explicite (commande admin/téléphonique), on l'utilise directement
+        # 2. Sinon, on cherche par région du client (city) → auto-assignation
+        # 3. Fallback : boutique par défaut 'maadtime' ou première boutique active
         store = None
         if store_slug:
             store = Store.objects.filter(slug=store_slug, is_active=True).first()
