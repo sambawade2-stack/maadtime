@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Leaf, Phone, MapPin, Instagram, Facebook, MessageCircle } from "lucide-react";
+import { Leaf, Phone, MapPin, Instagram, Facebook, MessageCircle, ShieldCheck } from "lucide-react";
 import { Category } from "@/types";
 import { productsApi } from "@/lib/api";
 import { useStoreConfig, waLink } from "@/hooks/useStoreConfig";
@@ -126,6 +126,25 @@ export default function Footer() {
               <MessageCircle className="w-4 h-4" />
               Chat WhatsApp
             </a>
+          </div>
+        </div>
+
+        {/* Légal & Certifications */}
+        <div className="py-6 border-t border-background/10">
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="w-4 h-4 text-brand-green-light" />
+            <h5 className="text-sm font-semibold text-background/80">Informations légales & certifications</h5>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-background/50">
+            <span>Registre de commerce : SN.MBR.2024.A.3958</span>
+            <span>•</span>
+            <span>NINEA : 011657858</span>
+            <span>•</span>
+            <span>✅ Agrément local</span>
+            <span>•</span>
+            <span>🌍 Certificat phytosanitaire disponible pour l&apos;export</span>
+            <span>•</span>
+            <span>Carte import-export</span>
           </div>
         </div>
 
