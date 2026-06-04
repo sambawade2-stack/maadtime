@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.text import slugify
 
 
@@ -153,3 +155,12 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.rating}★ par {self.user.email}"
+
+
+@receiver(post_save, sender='products.Product')
+def create_inventory_for_new_product(sender, instance, created, **kwargs):
+    if not created:
+        return
+    from apps.stores.models import Store
+    for store in Store.objects.filter(is_active=True):
+        StoreInventory.objects.get_or_create(store=store, product=instance, defaults={'stock': 0})
