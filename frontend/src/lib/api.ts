@@ -123,4 +123,8 @@ export const dashboardApi = {
   updateInventory: (id: number, data: object) => api.patch(`/products/inventory/${id}/`, data),
   // Commande manuelle (téléphonique)
   createAdminOrder: (data: object) => api.post("/dashboard/orders/create/", data),
+  // Push notifications
+  getVapidPublicKey: () => api.get("/dashboard/push/vapid-key/"),
+  pushSubscribe: (sub: object) => api.post("/dashboard/push/subscribe/", sub),
+  pushUnsubscribe: (endpoint: string) => api.delete("/dashboard/push/subscribe/", { data: { endpoint } }),
 };

@@ -104,6 +104,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+VAPID_PUBLIC_KEY = config('VAPID_PUBLIC_KEY', default='')
+VAPID_PRIVATE_KEY = config('VAPID_PRIVATE_KEY', default='')
+VAPID_MAILTO = config('VAPID_MAILTO', default='admin@maadtime.com')
+
 AUTH_USER_MODEL = 'authentication.User'
 
 REST_FRAMEWORK = {

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useOrderPolling } from "@/hooks/useOrderPolling";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const navSections = [
   {
@@ -86,6 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { newOrdersCount, clearNewOrders } = useNotificationStore();
 
   useOrderPolling();
+  usePushNotifications();
 
   // Vérifier la session au montage (rafraîchit le token si nécessaire)
   useEffect(() => {

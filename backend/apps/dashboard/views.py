@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth, TruncDate
+from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta, date as date_type
 from apps.orders.models import Order
 from apps.products.models import Product
 from apps.authentication.models import User
+from .models import PushSubscription
 from apps.stores.models import Store
 
 
@@ -219,3 +221,31 @@ class AdminCreateOrderView(APIView):
 
         order = serializer.save()
         return Response(OrderDetailSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+class VapidPublicKeyView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return Response({'public_key': settings.VAPID_PUBLIC_KEY})
+
+
+class PushSubscribeView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        endpoint = request.data.get('endpoint')
+        p256dh = request.data.get('keys', {}).get('p256dh')
+        auth = request.data.get('keys', {}).get('auth')
+        if not all([endpoint, p256dh, auth]):
+            return Response({'detail': 'Données manquantes.'}, status=400)
+        PushSubscription.objects.update_or_create(
+            endpoint=endpoint,
+            defaults={'user': request.user, 'p256dh': p256dh, 'auth': auth},
+        )
+        return Response({'detail': 'Abonné.'}, status=201)
+
+    def delete(self, request):
+        endpoint = request.data.get('endpoint')
+        PushSubscription.objects.filter(endpoint=endpoint).delete()
+        return Response(status=204)
