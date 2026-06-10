@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Truck,
-  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell, UserCircle, Store,
+  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell, UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -48,10 +48,6 @@ const superAdminSections = [
   {
     label: null,
     items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "Multi-boutiques",
-    items: [{ href: "/dashboard/boutiques", label: "Boutiques", icon: Store, superOnly: true }],
   },
   {
     label: "Boutique",
