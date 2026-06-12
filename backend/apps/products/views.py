@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
+from django.core.cache import cache
+from django.db.models import Count
+import hashlib
 from .models import Category, Product, Wishlist, ProductImage, ProductReview, StoreInventory
 from .serializers import (
     CategorySerializer, ProductListSerializer, ProductDetailSerializer,
@@ -48,7 +51,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
 
     def get_queryset(self):
-        return Category.objects.filter(is_active=True)
+        from django.db.models import Q
+        # annotate pour éviter le N+1 dans CategorySerializer.get_product_count
+        return Category.objects.filter(is_active=True).annotate(
+            active_product_count=Count('products', filter=Q(products__is_active=True))
+        )
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -91,20 +98,43 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Product.objects.all().select_related('category').prefetch_related('images', 'inventory')
         return Product.objects.filter(is_active=True).select_related('category').prefetch_related('images', 'inventory')
 
+    def list(self, request, *args, **kwargs):
+        cache_key = 'products_list_' + hashlib.md5(request.get_full_path().encode()).hexdigest()
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=60)
+        return response
+
+    def _invalidate_list_cache(self):
+        try:
+            cache.delete_pattern('products_list_*')
+        except Exception:
+            cache.clear()
+
     def create(self, request, *args, **kwargs):
         serializer = ProductWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = serializer.save()
 
-        # Créer une entrée StoreInventory pour chaque boutique active
         for store in Store.objects.filter(is_active=True):
             StoreInventory.objects.get_or_create(store=store, product=product, defaults={'stock': 0})
 
+        self._invalidate_list_cache()
         ctx = self.get_serializer_context()
         return Response(
             ProductDetailSerializer(product, context=ctx).data,
             status=status.HTTP_201_CREATED,
         )
+
+    def perform_update(self, serializer):
+        serializer.save()
+        self._invalidate_list_cache()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        self._invalidate_list_cache()
 
     @action(detail=False, methods=['get'])
     def featured(self, request):

@@ -3,14 +3,12 @@ from .models import Category, Product, ProductImage, StoreInventory, Wishlist, P
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    product_count = serializers.SerializerMethodField()
+    # Utilise l'annotation active_product_count injectée par la vue (0 requête extra)
+    product_count = serializers.IntegerField(source='active_product_count', read_only=True, default=0)
 
     class Meta:
         model = Category
         fields = ['id', 'name', 'slug', 'description', 'image', 'is_active', 'order', 'product_count']
-
-    def get_product_count(self, obj):
-        return obj.products.filter(is_active=True).count()
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -22,9 +20,8 @@ class ProductImageSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     main_image = serializers.SerializerMethodField()
-    in_stock = serializers.BooleanField(read_only=True)
+    in_stock = serializers.SerializerMethodField()
     discount_percent = serializers.IntegerField(read_only=True, allow_null=True)
-    # Stock de la boutique courante (injecté par la vue si contexte store)
     stock = serializers.SerializerMethodField()
 
     class Meta:
@@ -36,18 +33,26 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_main_image(self, obj):
-        img = obj.images.filter(is_main=True).first()
-        if img:
-            request = self.context.get('request')
-            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        # Utilise le prefetch_related('images') — pas de requête supplémentaire
+        for img in obj.images.all():
+            if img.is_main:
+                request = self.context.get('request')
+                return request.build_absolute_uri(img.image.url) if request else img.image.url
         return None
+
+    def get_in_stock(self, obj):
+        # Utilise le prefetch_related('inventory') — pas de requête supplémentaire
+        return any(inv.stock > 0 for inv in obj.inventory.all())
 
     def get_stock(self, obj):
         store = self.context.get('store')
+        # Utilise le prefetch_related('inventory') — pas de requête supplémentaire
         if store:
-            inv = obj.inventory.filter(store=store).first()
-            return inv.stock if inv else 0
-        return obj.total_stock
+            for inv in obj.inventory.all():
+                if inv.store_id == store.id:
+                    return inv.stock
+            return 0
+        return sum(inv.stock for inv in obj.inventory.all())
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):

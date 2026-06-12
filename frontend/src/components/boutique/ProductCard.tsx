@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { ShoppingCart, Heart, Star } from "lucide-react";
 import { Product } from "@/types";
 import { formatPrice } from "@/lib/utils";
@@ -37,12 +36,7 @@ export default function ProductCard({ product }: Props) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4 }}
-    >
+    <div>
       <Link href={`/produits/${product.slug}`} className="card-product block group">
         <div className="relative overflow-hidden aspect-square bg-brand-beige">
           {product.is_new && <span className="badge-new">Nouveau</span>}
@@ -55,6 +49,7 @@ export default function ProductCard({ product }: Props) {
               src={product.main_image}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
@@ -133,6 +128,6 @@ export default function ProductCard({ product }: Props) {
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
