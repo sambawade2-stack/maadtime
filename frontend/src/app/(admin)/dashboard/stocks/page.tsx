@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Package, Search, Store, ChevronDown } from "lucide-react";
-import { dashboardApi, storesApi } from "@/lib/api";
-import { StoreStats } from "@/types";
+import { AlertTriangle, Package, Search } from "lucide-react";
+import { dashboardApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import toast from "react-hot-toast";
 
@@ -19,35 +18,23 @@ interface InventoryItem {
 
 export default function AdminStocksPage() {
   const { user } = useAuthStore();
-  const isSuperAdmin = user?.is_superuser;
 
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [stores, setStores] = useState<StoreStats[]>([]);
-  const [selectedStore, setSelectedStore] = useState<number | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
   const [editing, setEditing] = useState<Record<number, string>>({});
-
-  useEffect(() => {
-    if (isSuperAdmin) {
-      storesApi.overview().then((r) => setStores(r.data)).catch(() => {});
-    }
-  }, [isSuperAdmin]);
 
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const params: Record<string, any> = {};
-      if (selectedStore) params.store_id = selectedStore;
-      const { data } = await dashboardApi.inventory(params);
+      const { data } = await dashboardApi.inventory();
       setInventory(data);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchInventory(); }, [selectedStore]);
+  useEffect(() => { fetchInventory(); }, []);
 
   const updateStock = async (id: number) => {
     const val = editing[id];
@@ -71,52 +58,16 @@ export default function AdminStocksPage() {
 
   const outOfStock = filtered.filter((i) => i.stock === 0).length;
   const lowStock = filtered.filter((i) => i.stock > 0 && i.stock <= 5).length;
-  const selectedStoreName = selectedStore ? stores.find((s) => s.id === selectedStore)?.name : null;
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Stocks</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {selectedStoreName ? `Boutique : ${selectedStoreName}` : isSuperAdmin ? "Toutes les boutiques" : user?.store?.name}
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">{user?.store?.name || "Maadtime"}</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {isSuperAdmin && stores.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setShowPicker((v) => !v)}
-                className="flex items-center gap-2 bg-white dark:bg-card border border-border rounded-xl px-4 py-2 text-sm font-medium shadow-card hover:bg-muted/50 transition-colors"
-              >
-                <Store className="w-4 h-4 text-brand-green" />
-                {selectedStoreName || "Toutes les boutiques"}
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-              {showPicker && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-card border border-border rounded-xl shadow-lg z-20 overflow-hidden">
-                  <button
-                    onClick={() => { setSelectedStore(null); setShowPicker(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors ${!selectedStore ? "font-semibold text-brand-green" : ""}`}
-                  >
-                    Toutes les boutiques
-                  </button>
-                  {stores.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => { setSelectedStore(s.id); setShowPicker(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-2 ${selectedStore === s.id ? "font-semibold text-brand-green" : ""}`}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-brand-green shrink-0" />
-                      {s.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {outOfStock > 0 && (
             <div className="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl px-4 py-2 text-sm font-medium">
               <AlertTriangle className="w-4 h-4" />
