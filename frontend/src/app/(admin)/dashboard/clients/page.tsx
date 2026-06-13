@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Mail, Phone, MapPin, UserCheck, User as UserIcon, Store, ChevronDown } from "lucide-react";
-import { dashboardApi, storesApi } from "@/lib/api";
-import { StoreStats } from "@/types";
+import { Users, Mail, Phone, MapPin, UserCheck, User as UserIcon } from "lucide-react";
+import { dashboardApi } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 interface Customer {
   id: string;
@@ -19,80 +17,27 @@ interface Customer {
 }
 
 export default function AdminClientsPage() {
-  const { user } = useAuthStore();
-  const isSuperAdmin = user?.is_superuser;
-
   const [clients, setClients] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stores, setStores] = useState<StoreStats[]>([]);
-  const [selectedStore, setSelectedStore] = useState<number | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
-    if (isSuperAdmin) {
-      storesApi.overview().then((r) => setStores(r.data)).catch(() => {});
-    }
-  }, [isSuperAdmin]);
-
-  useEffect(() => {
-    setLoading(true);
-    const params = selectedStore ? { store: selectedStore } : undefined;
-    dashboardApi.customers(params)
+    dashboardApi.customers()
       .then((r) => { setClients(r.data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [selectedStore]);
+  }, []);
 
   const registered = clients.filter((c) => c.type === "registered").length;
   const guests = clients.filter((c) => c.type === "guest").length;
-  const selectedStoreName = selectedStore ? stores.find((s) => s.id === selectedStore)?.name : null;
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Clients</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {selectedStoreName ? `Boutique : ${selectedStoreName}` : isSuperAdmin ? "Toutes les boutiques" : user?.store?.name}
-          </p>
+          <p className="text-muted-foreground text-sm mt-0.5">{clients.length} client{clients.length !== 1 ? "s" : ""}</p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Store selector (superadmin only) */}
-          {isSuperAdmin && stores.length > 0 && (
-            <div className="relative">
-              <button
-                onClick={() => setShowPicker((v) => !v)}
-                className="flex items-center gap-2 bg-white dark:bg-card border border-border rounded-xl px-4 py-2 text-sm font-medium shadow-card hover:bg-muted/50 transition-colors"
-              >
-                <Store className="w-4 h-4 text-brand-green" />
-                {selectedStoreName || "Toutes les boutiques"}
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-              {showPicker && (
-                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-card border border-border rounded-xl shadow-lg z-20 overflow-hidden">
-                  <button
-                    onClick={() => { setSelectedStore(null); setShowPicker(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors ${!selectedStore ? "font-semibold text-brand-green" : ""}`}
-                  >
-                    Toutes les boutiques
-                  </button>
-                  {stores.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => { setSelectedStore(s.id); setShowPicker(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-2 ${selectedStore === s.id ? "font-semibold text-brand-green" : ""}`}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-brand-green shrink-0" />
-                      {s.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Counters */}
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white dark:bg-card rounded-xl px-4 py-2 shadow-card text-sm">
             <UserCheck className="w-4 h-4 text-brand-green" />
             <span className="font-semibold">{registered}</span>
@@ -106,7 +51,6 @@ export default function AdminClientsPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white dark:bg-card rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -180,7 +124,7 @@ export default function AdminClientsPage() {
           {!loading && clients.length === 0 && (
             <div className="text-center py-16">
               <Users className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">Aucun client{selectedStoreName ? ` pour ${selectedStoreName}` : ""}</p>
+              <p className="text-muted-foreground text-sm">Aucun client</p>
             </div>
           )}
         </div>
