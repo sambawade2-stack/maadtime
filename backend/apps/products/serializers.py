@@ -29,7 +29,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'short_description', 'price', 'compare_price',
             'category_name', 'main_image', 'in_stock', 'is_active', 'stock',
-            'discount_percent', 'is_featured', 'is_new', 'weight', 'created_at'
+            'discount_percent', 'is_featured', 'is_new', 'weight', 'order', 'created_at'
         ]
 
     def get_main_image(self, obj):
@@ -96,7 +96,7 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'category', 'description', 'short_description',
             'price', 'compare_price', 'weight',
-            'is_active', 'is_featured', 'is_new'
+            'is_active', 'is_featured', 'is_new', 'order'
         ]
 
 

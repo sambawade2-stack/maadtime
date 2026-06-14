@@ -59,13 +59,14 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     is_new = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = 'Produit'
         verbose_name_plural = 'Produits'
-        ordering = ['-created_at']
+        ordering = ['order', '-created_at']
 
     def save(self, *args, **kwargs):
         if not self.slug:

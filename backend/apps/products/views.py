@@ -136,6 +136,22 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance.delete()
         self._invalidate_list_cache()
 
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
+    def reorder(self, request):
+        """Reçoit [{slug, order}, …] et met à jour l'ordre de chaque produit."""
+        items = request.data
+        if not isinstance(items, list):
+            return Response({'detail': 'Liste attendue.'}, status=400)
+        from django.db import transaction
+        with transaction.atomic():
+            for item in items:
+                slug = item.get('slug')
+                order = item.get('order')
+                if slug is not None and order is not None:
+                    Product.objects.filter(slug=slug).update(order=int(order))
+        self._invalidate_list_cache()
+        return Response({'detail': 'Ordre mis à jour.'})
+
     @action(detail=False, methods=['get'])
     def featured(self, request):
         products = self.get_queryset().filter(is_featured=True)[:8]
