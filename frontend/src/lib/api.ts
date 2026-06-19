@@ -24,7 +24,7 @@ api.interceptors.response.use(
       if (refresh) {
         try {
           const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
-          Cookies.set("access_token", data.access, { expires: 1 });
+          Cookies.set("access_token", data.access, { expires: 1 / 24, secure: true, sameSite: "Lax" });
           original.headers.Authorization = `Bearer ${data.access}`;
           return api(original);
         } catch {

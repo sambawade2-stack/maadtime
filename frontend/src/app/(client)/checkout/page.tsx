@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -29,6 +29,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [ordered, setOrdered] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [isInternational, setIsInternational] = useState(false);
@@ -50,6 +51,8 @@ export default function CheckoutPage() {
   }
 
   const onSubmit = async (data: CheckoutForm) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     try {
       const orderItems = items.map((i) => ({
@@ -66,6 +69,7 @@ export default function CheckoutPage() {
       toast.error(msg);
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 

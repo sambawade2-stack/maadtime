@@ -17,7 +17,23 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone',
                   'role', 'is_staff', 'is_superuser', 'store', 'avatar', 'created_at']
-        read_only_fields = ['id', 'is_staff', 'is_superuser', 'created_at']
+        read_only_fields = ['id', 'role', 'is_staff', 'is_superuser', 'created_at']
+
+    def validate_avatar(self, value):
+        if value is None:
+            return value
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError('Image trop volumineuse (max 5 Mo).')
+        from PIL import Image as PILImage
+        try:
+            pil_img = PILImage.open(value)
+            pil_img.verify()
+            if pil_img.format not in ('JPEG', 'PNG', 'WEBP', 'GIF'):
+                raise ValueError('Format non supporté')
+            value.seek(0)
+        except Exception:
+            raise serializers.ValidationError('Fichier image invalide. Utilisez JPEG, PNG ou WebP.')
+        return value
 
 
 class RegisterSerializer(serializers.ModelSerializer):

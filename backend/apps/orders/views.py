@@ -63,7 +63,7 @@ class OrderViewSet(StoreFilterMixin, viewsets.ModelViewSet):
         order.save()
         return Response(OrderDetailSerializer(order).data)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def cancel(self, request, pk=None):
         from django.db import transaction
         from apps.products.models import Product

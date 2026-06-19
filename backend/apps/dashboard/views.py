@@ -72,15 +72,21 @@ class DashboardStatsView(APIView):
         orders_today = Order.objects.filter(created_at__date=today, **sf).count()
         orders_week = Order.objects.filter(created_at__date__gte=last_7, **sf).count()
 
+        store_obj = sf.get('store')
+        if store_obj:
+            registered_customer_ids = Order.objects.filter(store=store_obj, user__isnull=False).values_list('user_id', flat=True).distinct()
+            registered_customers_qs = User.objects.filter(id__in=registered_customer_ids, role='client')
+        else:
+            registered_customers_qs = User.objects.filter(role='client')
+
         guest_phones = Order.objects.filter(user__isnull=True, **sf).values('phone').distinct().count()
-        total_customers = User.objects.filter(role='client').count() + guest_phones
+        total_customers = registered_customers_qs.count() + guest_phones
         new_customers_month = (
-            User.objects.filter(role='client', date_joined__date__gte=last_30).count() +
+            registered_customers_qs.filter(date_joined__date__gte=last_30).count() +
             Order.objects.filter(user__isnull=True, created_at__date__gte=last_30, **sf).values('phone').distinct().count()
         )
 
         from apps.products.models import StoreInventory
-        store_obj = sf.get('store')
         if store_obj:
             inv_qs = StoreInventory.objects.filter(store=store_obj, product__is_active=True)
         else:

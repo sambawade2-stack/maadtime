@@ -41,21 +41,27 @@ class CustomerListView(APIView):
             .values_list('user_id', flat=True)
             .distinct()
         )
+
+        # Une requête pour le compte de commandes + une pour la dernière ville, au lieu d'une par client
+        orders_count_by_user = dict(
+            order_qs.filter(user__isnull=False)
+            .values('user_id')
+            .annotate(count=Count('id'))
+            .values_list('user_id', 'count')
+        )
+        last_city_by_user = {}
+        for o in order_qs.filter(user__isnull=False).order_by('user_id', '-created_at').values('user_id', 'city'):
+            last_city_by_user.setdefault(o['user_id'], o['city'])
+
         for u in User.objects.filter(id__in=user_ids).order_by('-created_at'):
-            u_orders = order_qs.filter(user=u)
-            last_city = (
-                u_orders.order_by('-created_at')
-                .values_list('city', flat=True)
-                .first() or ''
-            )
             results.append({
                 'id': f'user-{u.id}',
                 'type': 'registered',
                 'name': f'{u.first_name} {u.last_name}'.strip() or u.username,
                 'email': u.email,
                 'phone': u.phone,
-                'city': last_city,
-                'orders_count': u_orders.count(),
+                'city': last_city_by_user.get(u.id, ''),
+                'orders_count': orders_count_by_user.get(u.id, 0),
                 'created_at': u.created_at.isoformat(),
             })
 
