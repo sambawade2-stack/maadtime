@@ -1,46 +1,9 @@
-export interface Store {
-  id: number;
+export interface SiteConfig {
   name: string;
-  slug: string;
-  description: string;
   logo: string | null;
   phone: string;
   whatsapp: string;
   address: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-export interface StoreStats {
-  id: number;
-  name: string;
-  slug: string;
-  logo: string | null;
-  is_active: boolean;
-  phone: string;
-  whatsapp: string;
-  address: string;
-  orders_total: number;
-  orders_pending: number;
-  orders_today: number;
-  orders_week: number;
-  revenue_total: number;
-  revenue_monthly: number;
-  revenue_daily: number;
-  products_total: number;
-  low_stock: number;
-  out_of_stock: number;
-  inventory: { product_name: string; stock: number }[];
-  regions: string[];
-}
-
-export interface StoreUser {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  store: { id: number; name: string; slug: string } | null;
 }
 
 export interface User {
@@ -53,7 +16,6 @@ export interface User {
   role: "admin" | "client";
   is_staff: boolean;
   is_superuser: boolean;
-  store: { id: number; name: string; slug: string } | null;
   avatar: string | null;
   created_at: string;
 }
@@ -167,7 +129,6 @@ export interface Order {
   total: number;
   items: OrderItem[];
   items_count?: number;
-  store_name?: string | null;
   created_at: string;
   updated_at: string;
 }

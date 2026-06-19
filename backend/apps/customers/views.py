@@ -13,26 +13,11 @@ class IsAdminUser(permissions.BasePermission):
 
 
 class CustomerListView(APIView):
-    """
-    Clients filtrés par boutique.
-    - Superadmin : tous les clients, ou ?store=<id> pour filtrer
-    - Gérant     : uniquement les clients de sa boutique
-    Retourne inscrits + invités (identifiés par téléphone).
-    """
+    """Liste des clients (inscrits + invités, identifiés par téléphone)."""
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        user = request.user
-
-        # --- Déterminer le filtre boutique ---
-        if user.is_superuser:
-            store_id = request.query_params.get('store')
-            order_qs = Order.objects.filter(store_id=store_id) if store_id else Order.objects.all()
-        else:
-            if not getattr(user, 'store', None):
-                return Response([])
-            order_qs = Order.objects.filter(store=user.store)
-
+        order_qs = Order.objects.all()
         results = []
 
         # --- Clients inscrits ayant commandé dans cette boutique ---

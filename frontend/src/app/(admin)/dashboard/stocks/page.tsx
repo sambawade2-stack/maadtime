@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Package, Search } from "lucide-react";
 import { dashboardApi } from "@/lib/api";
-import { useAuthStore } from "@/stores/authStore";
 import toast from "react-hot-toast";
 
 interface InventoryItem {
@@ -17,8 +16,6 @@ interface InventoryItem {
 }
 
 export default function AdminStocksPage() {
-  const { user } = useAuthStore();
-
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -64,7 +61,6 @@ export default function AdminStocksPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Stocks</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{user?.store?.name || "Maadtime"}</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">

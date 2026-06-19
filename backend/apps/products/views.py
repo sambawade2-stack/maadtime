@@ -7,13 +7,12 @@ from django_filters import rest_framework as filters
 from django.core.cache import cache
 from django.db.models import Count
 import hashlib
-from .models import Category, Product, Wishlist, ProductImage, ProductReview, StoreInventory
+from .models import Category, Product, Wishlist, ProductImage, ProductReview
 from .serializers import (
     CategorySerializer, ProductListSerializer, ProductDetailSerializer,
     ProductWriteSerializer, WishlistSerializer, ProductReviewSerializer,
-    StoreInventorySerializer,
+    ProductStockSerializer,
 )
-from apps.stores.models import Store
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -40,12 +39,11 @@ class ProductFilter(filters.FilterSet):
 
     def filter_in_stock(self, queryset, name, value):
         if value:
-            return queryset.filter(inventory__stock__gt=0).distinct()
-        return queryset.filter(inventory__stock=0).distinct()
+            return queryset.filter(stock__gt=0)
+        return queryset.filter(stock=0)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    """Catalogue global — toutes les boutiques partagent les mêmes catégories."""
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     lookup_field = 'slug'
@@ -59,10 +57,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    """
-    Catalogue global — produits visibles dans toutes les boutiques.
-    Le stock est par boutique (voir StoreInventoryViewSet).
-    """
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
@@ -71,16 +65,6 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     lookup_field = 'slug'
 
-    def _get_store_context(self):
-        """Retourne la boutique du contexte (gérant ou ?store=slug)."""
-        user = self.request.user
-        if user.is_authenticated and not user.is_superuser:
-            return getattr(user, 'store', None)
-        slug = self.request.query_params.get('store_slug')
-        if slug:
-            return Store.objects.filter(slug=slug).first()
-        return None
-
     def get_serializer_class(self):
         if self.action == 'list':
             return ProductListSerializer
@@ -88,15 +72,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductWriteSerializer
         return ProductDetailSerializer
 
-    def get_serializer_context(self):
-        ctx = super().get_serializer_context()
-        ctx['store'] = self._get_store_context()
-        return ctx
-
     def get_queryset(self):
         if self.request.user.is_authenticated and self.request.user.is_admin_user:
-            return Product.objects.all().select_related('category').prefetch_related('images', 'inventory')
-        return Product.objects.filter(is_active=True).select_related('category').prefetch_related('images', 'inventory')
+            return Product.objects.all().select_related('category').prefetch_related('images')
+        return Product.objects.filter(is_active=True).select_related('category').prefetch_related('images')
 
     def list(self, request, *args, **kwargs):
         cache_key = 'products_list_' + hashlib.md5(request.get_full_path().encode()).hexdigest()
@@ -117,10 +96,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = ProductWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product = serializer.save()
-
-        for store in Store.objects.filter(is_active=True):
-            StoreInventory.objects.get_or_create(store=store, product=product, defaults={'stock': 0})
-
         self._invalidate_list_cache()
         ctx = self.get_serializer_context()
         return Response(
@@ -213,50 +188,27 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response(ProductListSerializer(qs[:4], many=True, context=ctx).data)
 
 
-class StoreInventoryViewSet(viewsets.ViewSet):
-    """
-    Gestion du stock par boutique.
-    - Gérant : voit et modifie uniquement son inventaire
-    - Superadmin : voit tout, peut filtrer par ?store_id=<id>
-    """
+class ProductStockViewSet(viewsets.ViewSet):
+    """Gestion du stock — boutique unique, le stock vit directement sur Product."""
     permission_classes = [IsAdminUser]
 
-    def _get_store(self):
-        user = self.request.user
-        if user.is_superuser:
-            store_id = self.request.query_params.get('store_id') or self.request.data.get('store_id')
-            if store_id:
-                return Store.objects.filter(pk=store_id).first()
-            return None
-        return getattr(user, 'store', None)
-
     def list(self, request):
-        store = self._get_store()
-        if store:
-            qs = StoreInventory.objects.filter(store=store).select_related('product', 'product__category').prefetch_related('product__images')
-        elif request.user.is_superuser:
-            qs = StoreInventory.objects.all().select_related('store', 'product', 'product__category').prefetch_related('product__images')
-        else:
-            return Response([])
-        serializer = StoreInventorySerializer(qs, many=True, context={'request': request})
+        qs = Product.objects.all().select_related('category').prefetch_related('images').order_by('stock', 'name')
+        serializer = ProductStockSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
 
     def partial_update(self, request, pk=None):
         try:
-            inv = StoreInventory.objects.get(pk=pk)
-        except StoreInventory.DoesNotExist:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
             return Response({'detail': 'Introuvable.'}, status=404)
-
-        user = request.user
-        if not user.is_superuser and getattr(user, 'store', None) != inv.store:
-            return Response({'detail': 'Accès refusé.'}, status=403)
 
         stock = request.data.get('stock')
         if stock is None or int(stock) < 0:
             return Response({'detail': 'Stock invalide.'}, status=400)
-        inv.stock = int(stock)
-        inv.save()
-        return Response(StoreInventorySerializer(inv, context={'request': request}).data)
+        product.stock = int(stock)
+        product.save(update_fields=['stock'])
+        return Response(ProductStockSerializer(product, context={'request': request}).data)
 
 
 class WishlistViewSet(viewsets.ModelViewSet):

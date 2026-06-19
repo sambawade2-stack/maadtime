@@ -40,8 +40,6 @@ Plateforme e-commerce dédiée aux produits naturels sénégalais (maad, bouye, 
 - **Notifications push** — alerte navigateur à chaque nouvelle commande, même onglet fermé
 
 ### Automatisations
-- Routage automatique des commandes vers la boutique selon la région du client
-- Création automatique d'entrée stock à chaque nouveau produit
 - Cache Redis sur le catalogue (invalidé à chaque modification)
 
 ---
@@ -53,8 +51,8 @@ maadtime/
 ├── backend/
 │   ├── apps/
 │   │   ├── authentication/   # Utilisateurs, JWT
-│   │   ├── stores/           # Boutiques et régions
-│   │   ├── products/         # Catalogue, inventaire, images
+│   │   ├── siteconfig/       # Infos publiques de la boutique (nom, contact, logo)
+│   │   ├── products/         # Catalogue, stock, images
 │   │   ├── orders/           # Commandes et articles
 │   │   ├── customers/        # Clients
 │   │   ├── deliveries/       # Livraisons et zones
@@ -165,9 +163,6 @@ rm vapid.pem
 # Appliquer les migrations
 python manage.py migrate
 
-# Synchroniser l'inventaire (produits sans entrée stock)
-python manage.py sync_inventory
-
 # Générer les fichiers statiques
 python manage.py collectstatic
 ```
@@ -183,7 +178,6 @@ python manage.py collectstatic
 
 ```bash
 cd /app && python manage.py migrate
-cd /app && python manage.py sync_inventory
 ```
 
 ---

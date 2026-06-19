@@ -5,45 +5,29 @@ import { motion } from "framer-motion";
 import {
   TrendingUp, ShoppingBag, Users, Package,
   AlertTriangle, ArrowUpRight, ArrowDownRight,
-  Store, ChevronDown
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from "recharts";
-import { dashboardApi, storesApi } from "@/lib/api";
-import { DashboardStats, Order, StoreStats } from "@/types";
+import { dashboardApi } from "@/lib/api";
+import { DashboardStats, Order } from "@/types";
 import { formatPrice, formatDate, getOrderStatusColor } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
-  const isSuperAdmin = user?.is_superuser;
-
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [chartData, setChartData] = useState([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [stores, setStores] = useState<StoreStats[]>([]);
-  const [selectedStore, setSelectedStore] = useState<number | null>(null);
-  const [showStorePicker, setShowStorePicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Fetch stores list for superadmin
-  useEffect(() => {
-    if (isSuperAdmin) {
-      storesApi.overview().then((r) => setStores(r.data)).catch(() => {});
-    }
-  }, [isSuperAdmin]);
-
   useEffect(() => {
     setLoading(true);
     setError(false);
-    const params = selectedStore ? { store: selectedStore } : undefined;
     Promise.all([
-      dashboardApi.stats(params),
-      dashboardApi.salesChart("month", params),
+      dashboardApi.stats(),
+      dashboardApi.salesChart("month"),
       dashboardApi.recentOrders(),
     ]).then(([s, c, o]) => {
       setStats(s.data);
@@ -54,11 +38,7 @@ export default function DashboardPage() {
       setError(true);
       setLoading(false);
     });
-  }, [selectedStore, retryCount]);
-
-  const selectedStoreName = selectedStore
-    ? stores.find((s) => s.id === selectedStore)?.name
-    : null;
+  }, [retryCount]);
 
   if (loading) {
     return (
@@ -137,44 +117,8 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold">Tableau de bord</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Vue d&apos;ensemble {selectedStoreName ? `— ${selectedStoreName}` : isSuperAdmin ? "— Toutes les boutiques" : `de ${user?.store?.name || "Maadtime"}`}
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">Vue d&apos;ensemble</p>
         </div>
-
-        {/* Store selector (superadmin only) */}
-        {isSuperAdmin && stores.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={() => setShowStorePicker((v) => !v)}
-              className="flex items-center gap-2 bg-white dark:bg-card border border-border rounded-xl px-4 py-2.5 text-sm font-medium shadow-card hover:bg-muted/50 transition-colors"
-            >
-              <Store className="w-4 h-4 text-brand-green" />
-              {selectedStoreName || "Toutes les boutiques"}
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-            {showStorePicker && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-card border border-border rounded-xl shadow-lg z-20 overflow-hidden">
-                <button
-                  onClick={() => { setSelectedStore(null); setShowStorePicker(false); }}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-2 ${!selectedStore ? "font-semibold text-brand-green" : ""}`}
-                >
-                  Toutes les boutiques
-                </button>
-                {stores.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => { setSelectedStore(s.id); setShowStorePicker(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors flex items-center gap-2 ${selectedStore === s.id ? "font-semibold text-brand-green" : ""}`}
-                  >
-                    <div className="w-2 h-2 rounded-full bg-brand-green shrink-0" />
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Stat cards */}

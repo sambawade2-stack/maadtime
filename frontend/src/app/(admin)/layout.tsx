@@ -44,37 +44,6 @@ const navSections = [
   },
 ];
 
-const superAdminSections = [
-  {
-    label: null,
-    items: [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "Boutique",
-    items: [
-      { href: "/dashboard/produits", label: "Produits", icon: Package },
-      { href: "/dashboard/categories", label: "Catégories", icon: Tag },
-      { href: "/dashboard/stocks", label: "Stocks", icon: AlertTriangle },
-    ],
-  },
-  {
-    label: "Ventes",
-    items: [
-      { href: "/dashboard/commandes", label: "Commandes", icon: ShoppingBag, badge: true },
-      { href: "/dashboard/livraisons", label: "Livraisons", icon: Truck },
-      { href: "/dashboard/clients", label: "Clients", icon: Users },
-    ],
-  },
-  {
-    label: "Rapports",
-    items: [{ href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 }],
-  },
-  {
-    label: "Compte",
-    items: [{ href: "/dashboard/profil", label: "Mon profil", icon: UserCircle }],
-  },
-];
-
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -113,7 +82,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const isSuperAdmin = user?.is_superuser;
-  const activeSections = isSuperAdmin ? superAdminSections : navSections;
 
   const Sidebar = () => (
     <div className="flex flex-col h-full bg-foreground dark:bg-card text-background">
@@ -126,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div>
             <p className="font-display font-bold text-background leading-none">Maadtime</p>
             <p className="text-[10px] text-background/50 mt-0.5">
-              {isSuperAdmin ? "Propriétaire" : user?.store?.name || "Admin"}
+              {isSuperAdmin ? "Propriétaire" : "Administrateur"}
             </p>
           </div>
         </Link>
@@ -134,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
-        {activeSections.map((section, si) => (
+        {navSections.map((section, si) => (
           <div key={si}>
             {section.label && (
               <p className="text-[10px] font-semibold uppercase tracking-widest text-background/30 px-3 mb-1">

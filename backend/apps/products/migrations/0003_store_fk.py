@@ -1,33 +1,14 @@
-from django.db import migrations, models
-import django.db.models.deletion
+# Historique : ajoutait à l'origine category.store / product.store (FK vers
+# l'app stores, supprimée depuis — boutique unique, voir conversation du
+# 2026-06-19). Neutralisé pour ne pas casser l'historique des migrations
+# déjà appliquées (django_migrations).
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('products', '0002_alter_product_description'),
-        ('stores', '0001_initial'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='category',
-            name='store',
-            field=models.ForeignKey(
-                blank=True, null=True,
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name='categories',
-                to='stores.store',
-            ),
-        ),
-        migrations.AddField(
-            model_name='product',
-            name='store',
-            field=models.ForeignKey(
-                blank=True, null=True,
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name='products',
-                to='stores.store',
-            ),
-        ),
-    ]
+    operations = []

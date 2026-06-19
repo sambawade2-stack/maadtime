@@ -10,7 +10,6 @@ from apps.orders.models import Order
 from apps.products.models import Product
 from apps.authentication.models import User
 from .models import PushSubscription
-from apps.stores.models import Store
 
 
 def parse_date(value):
@@ -25,22 +24,6 @@ class IsAdminUser(permissions.BasePermission):
         return request.user.is_authenticated and request.user.is_admin_user
 
 
-def _get_store_filter(request):
-    """Retourne le dict de filtre store selon le rôle."""
-    user = request.user
-    if user.is_superuser:
-        store_id = request.query_params.get('store')
-        if store_id:
-            try:
-                return {'store': Store.objects.get(pk=store_id)}
-            except Store.DoesNotExist:
-                pass
-        return {}  # tout voir
-    if getattr(user, 'store', None):
-        return {'store': user.store}
-    return {}
-
-
 class DashboardStatsView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -53,10 +36,9 @@ class DashboardStatsView(APIView):
         date_to = parse_date(request.query_params.get('date_to', '')) or None
 
         active_statuses = ['confirmed', 'processing', 'shipped', 'delivered']
-        sf = _get_store_filter(request)
 
-        base_qs = Order.objects.filter(status__in=active_statuses, **sf)
-        all_qs = Order.objects.filter(**sf)
+        base_qs = Order.objects.filter(status__in=active_statuses)
+        all_qs = Order.objects.all()
 
         if date_from:
             base_qs = base_qs.filter(created_at__date__gte=date_from)
@@ -67,30 +49,20 @@ class DashboardStatsView(APIView):
 
         total_revenue = base_qs.aggregate(t=Sum('total'))['t'] or 0
         monthly_revenue = base_qs.filter(created_at__date__gte=last_30).aggregate(t=Sum('total'))['t'] or 0
-        daily_revenue = Order.objects.filter(status__in=active_statuses, created_at__date=today, **sf).aggregate(t=Sum('total'))['t'] or 0
+        daily_revenue = Order.objects.filter(status__in=active_statuses, created_at__date=today).aggregate(t=Sum('total'))['t'] or 0
 
-        orders_today = Order.objects.filter(created_at__date=today, **sf).count()
-        orders_week = Order.objects.filter(created_at__date__gte=last_7, **sf).count()
+        orders_today = Order.objects.filter(created_at__date=today).count()
+        orders_week = Order.objects.filter(created_at__date__gte=last_7).count()
 
-        store_obj = sf.get('store')
-        if store_obj:
-            registered_customer_ids = Order.objects.filter(store=store_obj, user__isnull=False).values_list('user_id', flat=True).distinct()
-            registered_customers_qs = User.objects.filter(id__in=registered_customer_ids, role='client')
-        else:
-            registered_customers_qs = User.objects.filter(role='client')
-
-        guest_phones = Order.objects.filter(user__isnull=True, **sf).values('phone').distinct().count()
+        registered_customers_qs = User.objects.filter(role='client')
+        guest_phones = Order.objects.filter(user__isnull=True).values('phone').distinct().count()
         total_customers = registered_customers_qs.count() + guest_phones
         new_customers_month = (
             registered_customers_qs.filter(date_joined__date__gte=last_30).count() +
-            Order.objects.filter(user__isnull=True, created_at__date__gte=last_30, **sf).values('phone').distinct().count()
+            Order.objects.filter(user__isnull=True, created_at__date__gte=last_30).values('phone').distinct().count()
         )
 
-        from apps.products.models import StoreInventory
-        if store_obj:
-            inv_qs = StoreInventory.objects.filter(store=store_obj, product__is_active=True)
-        else:
-            inv_qs = StoreInventory.objects.filter(product__is_active=True)
+        products_qs = Product.objects.filter(is_active=True)
 
         return Response({
             'revenue': {
@@ -101,7 +73,7 @@ class DashboardStatsView(APIView):
             'orders': {
                 'today': orders_today,
                 'week': orders_week,
-                'total': Order.objects.filter(**sf).count(),
+                'total': Order.objects.count(),
                 'period': all_qs.count(),
                 'by_status': list(all_qs.values('status').annotate(count=Count('id'))),
             },
@@ -110,9 +82,9 @@ class DashboardStatsView(APIView):
                 'new_month': new_customers_month,
             },
             'products': {
-                'total': Product.objects.filter(is_active=True).count(),
-                'low_stock': inv_qs.filter(stock__lte=5, stock__gt=0).count(),
-                'out_of_stock': inv_qs.filter(stock=0).count(),
+                'total': products_qs.count(),
+                'low_stock': products_qs.filter(stock__lte=5, stock__gt=0).count(),
+                'out_of_stock': products_qs.filter(stock=0).count(),
             },
         })
 
@@ -126,7 +98,6 @@ class SalesChartView(APIView):
         date_from = parse_date(request.query_params.get('date_from', '')) or None
         date_to = parse_date(request.query_params.get('date_to', '')) or None
         active_statuses = ['confirmed', 'processing', 'shipped', 'delivered']
-        sf = _get_store_filter(request)
 
         if period == 'week' or (date_from and date_to and (date_to - date_from).days <= 31):
             start_date = date_from or (today - timedelta(days=6))
@@ -135,7 +106,6 @@ class SalesChartView(APIView):
                 created_at__date__gte=start_date,
                 created_at__date__lte=end_date,
                 status__in=active_statuses,
-                **sf,
             )
             data = (
                 qs.annotate(day=TruncDate('created_at'))
@@ -151,7 +121,6 @@ class SalesChartView(APIView):
                 created_at__date__gte=start_date,
                 created_at__date__lte=end_date,
                 status__in=active_statuses,
-                **sf,
             )
             data = (
                 qs.annotate(month=TruncMonth('created_at'))
@@ -169,9 +138,8 @@ class TopProductsView(APIView):
         from apps.orders.models import OrderItem
         date_from = parse_date(request.query_params.get('date_from', '')) or None
         date_to = parse_date(request.query_params.get('date_to', '')) or None
-        sf = _get_store_filter(request)
 
-        qs = OrderItem.objects.filter(**{f'order__{k}': v for k, v in sf.items()})
+        qs = OrderItem.objects.all()
         if date_from:
             qs = qs.filter(order__created_at__date__gte=date_from)
         if date_to:
@@ -190,36 +158,22 @@ class RecentOrdersView(APIView):
 
     def get(self, request):
         from apps.orders.serializers import OrderListSerializer
-        sf = _get_store_filter(request)
-        orders = Order.objects.filter(**sf).select_related('user').order_by('-created_at')[:10]
+        orders = Order.objects.all().select_related('user').order_by('-created_at')[:10]
         serializer = OrderListSerializer(orders, many=True)
         return Response(serializer.data)
 
 
 class AdminCreateOrderView(APIView):
-    """
-    Création d'une commande manuelle par l'admin / gérant (commande téléphonique).
-    L'utilisateur final est traité comme invité (user=None).
-    """
+    """Création d'une commande manuelle par l'admin (commande téléphonique).
+    L'utilisateur final est traité comme invité (user=None)."""
     permission_classes = [IsAdminUser]
 
     def post(self, request):
         from apps.orders.serializers import CreateOrderSerializer
         from apps.orders.serializers import OrderDetailSerializer
 
-        user = request.user
-
-        # Injecter le store dans les données si gérant (pas superadmin)
-        data = request.data.copy()
-        if not user.is_superuser:
-            store = getattr(user, 'store', None)
-            if store:
-                data['store_slug'] = store.slug
-            else:
-                return Response({'detail': 'Aucune boutique associée à ce compte.'}, status=400)
-
         serializer = CreateOrderSerializer(
-            data=data,
+            data=request.data,
             context={'request': request, 'admin_order': True},
         )
         if not serializer.is_valid():

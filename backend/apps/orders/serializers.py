@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Address
-from apps.products.models import Product, StoreInventory
-from apps.stores.models import Store
+from apps.products.models import Product
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -25,13 +24,12 @@ class OrderItemWriteSerializer(serializers.Serializer):
 class OrderListSerializer(serializers.ModelSerializer):
     items_count = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    store_name = serializers.CharField(source='store.name', read_only=True, default=None)
 
     class Meta:
         model = Order
         fields = [
             'id', 'order_number', 'status', 'status_display', 'total',
-            'items_count', 'city', 'full_name', 'phone', 'store_name', 'created_at'
+            'items_count', 'city', 'full_name', 'phone', 'created_at'
         ]
 
     def get_items_count(self, obj):
@@ -61,7 +59,6 @@ class CreateOrderSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=100)
     neighborhood = serializers.CharField(max_length=100, required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)
-    store_slug = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     items = OrderItemWriteSerializer(many=True)
 
     def validate_items(self, value):
@@ -73,48 +70,18 @@ class CreateOrderSerializer(serializers.Serializer):
         from django.db import transaction
 
         items_data = validated_data.pop('items')
-        store_slug = validated_data.pop('store_slug', '') or ''
         request = self.context['request']
         # admin_order=True → commande téléphonique, user=None (invité)
         admin_order = self.context.get('admin_order', False)
         user = None if admin_order else (request.user if request.user.is_authenticated else None)
 
-        # Déterminer la boutique
-        # 1. Si store_slug explicite (commande admin/téléphonique), on l'utilise directement
-        # 2. Sinon, on cherche par région du client (city) → auto-assignation
-        # 3. Fallback : boutique par défaut 'maadtime' ou première boutique active
-        store = None
-        if store_slug:
-            store = Store.objects.filter(slug=store_slug, is_active=True).first()
-
-        if not store:
-            city = validated_data.get('city', '')
-            if city:
-                # Cherche la boutique qui couvre cette région
-                for s in Store.objects.filter(is_active=True):
-                    if city in (s.regions or []):
-                        store = s
-                        break
-
-        if not store:
-            store = Store.objects.filter(is_active=True, slug='maadtime').first() \
-                    or Store.objects.filter(is_active=True).first()
-
         with transaction.atomic():
             product_ids = [item['product_id'] for item in items_data]
             products = {
-                p.id: p for p in Product.objects.filter(id__in=product_ids, is_active=True)
+                p.id: p for p in Product.objects.select_for_update().filter(
+                    id__in=product_ids, is_active=True
+                )
             }
-
-            # Vérifier le stock dans l'inventaire de la boutique
-            inventories = {}
-            if store:
-                inventories = {
-                    inv.product_id: inv
-                    for inv in StoreInventory.objects.select_for_update().filter(
-                        store=store, product_id__in=product_ids
-                    )
-                }
 
             subtotal = 0
             order_items = []
@@ -127,28 +94,23 @@ class CreateOrderSerializer(serializers.Serializer):
                     )
 
                 quantity = item_data['quantity']
-                inv = inventories.get(product.id)
-
-                if inv is not None:
-                    if inv.stock < quantity:
-                        raise serializers.ValidationError(
-                            f"Stock insuffisant pour {product.name}. Disponible : {inv.stock}"
-                        )
-                # Si pas d'entrée StoreInventory → pas de vérification de stock (tolérance)
+                if product.stock < quantity:
+                    raise serializers.ValidationError(
+                        f"Stock insuffisant pour {product.name}. Disponible : {product.stock}"
+                    )
 
                 subtotal += product.price * quantity
-                order_items.append((product, quantity, inv))
+                order_items.append((product, quantity))
 
             order = Order.objects.create(
                 user=user,
-                store=store,
                 subtotal=subtotal,
                 delivery_fee=0,
                 total=subtotal,
                 **validated_data
             )
 
-            for product, quantity, inv in order_items:
+            for product, quantity in order_items:
                 main_img = product.images.filter(is_main=True).first()
                 OrderItem.objects.create(
                     order=order,
@@ -159,9 +121,7 @@ class CreateOrderSerializer(serializers.Serializer):
                     quantity=quantity,
                     total=product.price * quantity,
                 )
-                # Déduire du stock boutique
-                if inv is not None:
-                    inv.stock = max(0, inv.stock - quantity)
-                    inv.save()
+                product.stock = max(0, product.stock - quantity)
+                product.save(update_fields=['stock'])
 
         return order

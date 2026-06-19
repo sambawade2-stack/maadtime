@@ -40,7 +40,6 @@ class Order(models.Model):
     ]
 
     order_number = models.CharField(max_length=20, unique=True, blank=True)
-    store = models.ForeignKey('stores.Store', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     user = models.ForeignKey('authentication.User', on_delete=models.SET_NULL, null=True, related_name='orders')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_method = models.CharField(max_length=30, choices=PAYMENT_METHOD_CHOICES, default='cash_on_delivery')

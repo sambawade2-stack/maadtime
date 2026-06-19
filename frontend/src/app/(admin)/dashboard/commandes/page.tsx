@@ -5,9 +5,6 @@ import { Search, Plus, X, Trash2, Phone, PhoneCall, Loader2 } from "lucide-react
 import { Order, Product } from "@/types";
 import { dashboardApi } from "@/lib/api";
 import { formatPrice, formatDate, getOrderStatusColor, REGIONS_SENEGAL } from "@/lib/utils";
-import { useAuthStore } from "@/stores/authStore";
-import { storesApi } from "@/lib/api";
-import { StoreStats } from "@/types";
 import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -28,9 +25,6 @@ const EMPTY_CLIENT = {
 };
 
 export default function AdminOrdersPage() {
-  const { user } = useAuthStore();
-  const isSuperAdmin = user?.is_superuser;
-
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
@@ -38,8 +32,6 @@ export default function AdminOrdersPage() {
 
   // --- Modal nouvelle commande ---
   const [modalOpen, setModalOpen] = useState(false);
-  const [stores, setStores] = useState<StoreStats[]>([]);
-  const [selectedStoreSlug, setSelectedStoreSlug] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [productResults, setProductResults] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -62,10 +54,6 @@ export default function AdminOrdersPage() {
     const interval = setInterval(fetchOrders, 30_000);
     return () => clearInterval(interval);
   }, [filterStatus, search]);
-
-  useEffect(() => {
-    if (isSuperAdmin) storesApi.overview().then((r) => setStores(r.data)).catch(() => {});
-  }, [isSuperAdmin]);
 
   // Recherche produits dans le modal
   useEffect(() => {
@@ -99,7 +87,6 @@ export default function AdminOrdersPage() {
     setClient(EMPTY_CLIENT);
     setProductSearch("");
     setProductResults([]);
-    setSelectedStoreSlug(isSuperAdmin ? "" : (user?.store?.slug || ""));
     setModalOpen(true);
   };
 
@@ -113,7 +100,6 @@ export default function AdminOrdersPage() {
     try {
       const payload = {
         ...client,
-        store_slug: selectedStoreSlug || "maadtime",
         items: cart.map((l) => ({ product_id: l.product.id, quantity: l.quantity })),
       };
       await dashboardApi.createAdminOrder(payload);
@@ -192,11 +178,6 @@ export default function AdminOrdersPage() {
                 <tr key={o.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-mono font-bold text-brand-green text-xs">#{o.order_number}</p>
-                    {o.store_name && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-brand-green/10 text-brand-green rounded-full font-medium">
-                        {o.store_name}
-                      </span>
-                    )}
                   </td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{o.full_name}</p>
@@ -269,23 +250,6 @@ export default function AdminOrdersPage() {
                   {/* Colonne gauche : produits */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-sm">Produits</h3>
-
-                    {/* Boutique (superadmin) */}
-                    {isSuperAdmin && stores.length > 0 && (
-                      <div>
-                        <label className="block text-xs font-medium text-muted-foreground mb-1">Boutique</label>
-                        <select
-                          value={selectedStoreSlug}
-                          onChange={(e) => setSelectedStoreSlug(e.target.value)}
-                          className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30"
-                        >
-                          <option value="">— Sélectionner —</option>
-                          {stores.map((s) => (
-                            <option key={s.slug} value={s.slug}>{s.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
 
                     {/* Recherche produit */}
                     <div className="relative">

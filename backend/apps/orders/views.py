@@ -1,6 +1,5 @@
 from rest_framework import generics, viewsets, permissions, status
 from django.db import models
-from apps.stores.mixins import StoreFilterMixin
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,7 +17,7 @@ class IsAdminUser(permissions.BasePermission):
         return request.user.is_authenticated and request.user.is_admin_user
 
 
-class OrderViewSet(StoreFilterMixin, viewsets.ModelViewSet):
+class OrderViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status']
     search_fields = ['order_number', 'full_name', 'phone']
@@ -35,8 +34,7 @@ class OrderViewSet(StoreFilterMixin, viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Order.objects.none()
         if user.is_admin_user:
-            qs = Order.objects.all().prefetch_related('items')
-            return self.filter_queryset_by_store(qs)
+            return Order.objects.all().prefetch_related('items')
         return Order.objects.filter(user=user).prefetch_related('items')
 
     def get_serializer_class(self):
@@ -76,13 +74,9 @@ class OrderViewSet(StoreFilterMixin, viewsets.ModelViewSet):
         with transaction.atomic():
             order.status = 'cancelled'
             order.save()
-            if order.store:
-                from apps.products.models import StoreInventory
-                for item in order.items.all():
-                    if item.product_id:
-                        StoreInventory.objects.filter(
-                            store=order.store, product_id=item.product_id
-                        ).update(stock=models.F('stock') + item.quantity)
+            for item in order.items.all():
+                if item.product_id:
+                    Product.objects.filter(id=item.product_id).update(stock=models.F('stock') + item.quantity)
         return Response({'detail': 'Commande annulée.'})
 
 

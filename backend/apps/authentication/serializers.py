@@ -4,19 +4,11 @@ from django.contrib.auth.password_validation import validate_password
 from .models import User
 
 
-class StoreMinimalSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    slug = serializers.CharField()
-
-
 class UserSerializer(serializers.ModelSerializer):
-    store = StoreMinimalSerializer(read_only=True)
-
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name', 'phone',
-                  'role', 'is_staff', 'is_superuser', 'store', 'avatar', 'created_at']
+                  'role', 'is_staff', 'is_superuser', 'avatar', 'created_at']
         read_only_fields = ['id', 'role', 'is_staff', 'is_superuser', 'created_at']
 
     def validate_avatar(self, value):

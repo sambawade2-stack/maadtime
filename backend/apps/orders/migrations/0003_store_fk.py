@@ -1,23 +1,15 @@
-from django.db import migrations, models
-import django.db.models.deletion
+# Historique : ajoutait à l'origine Order.store (FK vers l'app stores,
+# supprimée depuis — boutique unique, voir conversation du 2026-06-19). La
+# colonne correspondante reste intacte en base sur les environnements où elle
+# a déjà été créée ; ce fichier est conservé vide pour ne pas casser
+# l'historique des migrations déjà appliquées (django_migrations).
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('orders', '0002_order_country'),
-        ('stores', '0001_initial'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='order',
-            name='store',
-            field=models.ForeignKey(
-                blank=True, null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name='orders',
-                to='stores.store',
-            ),
-        ),
-    ]
+    operations = []

@@ -22,15 +22,13 @@ let fetchPromise: Promise<StoreConfig> | null = null;
 async function fetchConfig(): Promise<StoreConfig> {
   if (cache) return cache;
   if (!fetchPromise) {
-    const slug = process.env.NEXT_PUBLIC_STORE_SLUG || "maadtime";
     const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-    fetchPromise = fetch(`${base}/stores/public/?slug=${slug}`)
+    fetchPromise = fetch(`${base}/site-config/`)
       .then((r) => {
         if (!r.ok) return DEFAULT;
         return r.json();
       })
       .then((data: StoreConfig) => {
-        // Vérifier que la réponse est un vrai store (pas une erreur DRF)
         if (!data?.name) return DEFAULT;
         cache = data;
         return data;

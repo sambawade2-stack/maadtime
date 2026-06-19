@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.text import slugify
 
 
@@ -44,10 +42,7 @@ class Category(models.Model):
 
 
 class Product(models.Model):
-    """
-    Catalogue global — partagé par toutes les boutiques.
-    Le stock est géré par StoreInventory (une entrée par boutique).
-    """
+    """Catalogue produits — boutique unique."""
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='products')
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
@@ -55,6 +50,7 @@ class Product(models.Model):
     short_description = models.CharField(max_length=300, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     compare_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    stock = models.PositiveIntegerField(default=0)
     weight = models.CharField(max_length=50, blank=True)
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
@@ -83,35 +79,13 @@ class Product(models.Model):
 
     @property
     def in_stock(self):
-        """True si au moins une boutique a du stock."""
-        return self.inventory.filter(stock__gt=0).exists()
-
-    @property
-    def total_stock(self):
-        """Stock total toutes boutiques confondues."""
-        from django.db.models import Sum
-        return self.inventory.aggregate(t=Sum('stock'))['t'] or 0
+        return self.stock > 0
 
     @property
     def discount_percent(self):
         if self.compare_price and self.compare_price > self.price:
             return round((1 - self.price / self.compare_price) * 100)
         return None
-
-
-class StoreInventory(models.Model):
-    """Stock d'un produit pour une boutique donnée."""
-    store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, related_name='inventory')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inventory')
-    stock = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        unique_together = ['store', 'product']
-        verbose_name = 'Stock boutique'
-        verbose_name_plural = 'Stocks boutiques'
-
-    def __str__(self):
-        return f"{self.store.name} / {self.product.name} — {self.stock}"
 
 
 class ProductImage(models.Model):
@@ -156,12 +130,3 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.rating}★ par {self.user.email}"
-
-
-@receiver(post_save, sender='products.Product')
-def create_inventory_for_new_product(sender, instance, created, **kwargs):
-    if not created:
-        return
-    from apps.stores.models import Store
-    for store in Store.objects.filter(is_active=True):
-        StoreInventory.objects.get_or_create(store=store, product=instance, defaults={'stock': 0})
