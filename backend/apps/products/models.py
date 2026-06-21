@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from .imaging import compress_image_field
 
 
 def _unique_slug(model_class, name, pk=None):
@@ -35,6 +36,8 @@ class Category(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = _unique_slug(Category, self.name, self.pk)
+        if self.image and not self.image._committed:
+            self.image = compress_image_field(self.image)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -97,6 +100,11 @@ class ProductImage(models.Model):
 
     class Meta:
         ordering = ['order']
+
+    def save(self, *args, **kwargs):
+        if self.image and not self.image._committed:
+            self.image = compress_image_field(self.image)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.product.name} - Image {self.order}"

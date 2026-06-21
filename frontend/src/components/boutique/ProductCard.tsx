@@ -11,9 +11,10 @@ import toast from "react-hot-toast";
 
 interface Props {
   product: Product;
+  priority?: boolean;
 }
 
-export default function ProductCard({ product }: Props) {
+export default function ProductCard({ product, priority = false }: Props) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
 
@@ -51,6 +52,8 @@ export default function ProductCard({ product }: Props) {
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
+              priority={priority}
+              loading={priority ? undefined : "lazy"}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
