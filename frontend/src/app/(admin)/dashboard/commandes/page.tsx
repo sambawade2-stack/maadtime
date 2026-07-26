@@ -16,9 +16,6 @@ const STATUS_OPTIONS = [
   { value: "", label: "Tous" },
   { value: "pending", label: "En attente" },
   { value: "confirmed", label: "Confirmée" },
-  { value: "processing", label: "En traitement" },
-  { value: "shipped", label: "Expédiée" },
-  { value: "delivered", label: "Livrée" },
   { value: "cancelled", label: "Annulée" },
 ];
 
