@@ -6,16 +6,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-maadtime}
       POSTGRES_USER: ${POSTGRES_USER:-maadtime}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    # Limiter la RAM que PostgreSQL peut utiliser sur un petit VPS
-    command: >
-      postgres
-        -c shared_buffers=64MB
-        -c work_mem=4MB
-        -c maintenance_work_mem=32MB
-        -c effective_cache_size=128MB
-        -c max_connections=20
-        -c checkpoint_completion_target=0.9
-        -c wal_buffers=8MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -75,27 +65,18 @@ services:
     depends_on:
       - db
       - redis
-    # 1 worker + 4 threads (gthread) au lieu de 2 workers fork :
-    # économise ~150 MB RAM tout en gérant la concurrence.
     command: >
       sh -c "until python -c 'import psycopg2,os; psycopg2.connect(host=\"db\",port=5432,user=os.environ[\"POSTGRES_USER\"],password=os.environ[\"POSTGRES_PASSWORD\"],dbname=os.environ[\"POSTGRES_DB\"])' 2>/dev/null; do echo 'Waiting for DB...'; sleep 3; done &&
              python manage.py migrate --settings=core.settings.production &&
              python manage.py collectstatic --noinput --settings=core.settings.production &&
-             gunicorn core.wsgi:application
-               --bind 0.0.0.0:8000
-               --workers 1
-               --worker-class gthread
-               --threads 4
-               --timeout 120
-               --max-requests 1000
-               --max-requests-jitter 50"
+             gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
     networks:
       - dokploy-network
     deploy:
       resources:
         limits:
-          memory: 300M
-          cpus: '0.5'
+          memory: 400M
+          cpus: '0.6'
 
   frontend:
     build:
