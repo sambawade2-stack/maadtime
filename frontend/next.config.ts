@@ -4,28 +4,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   compress: true,
   images: {
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 jours
-    deviceSizes: [360, 640, 768, 1024, 1280, 1600],
-    imageSizes: [128, 256, 384, 512],
-    remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "8000",
-        pathname: "/media/**",
-      },
-      {
-        protocol: "https",
-        hostname: "maadtime.com",
-        pathname: "/media/**",
-      },
-      {
-        protocol: "https",
-        hostname: "www.maadtime.com",
-        pathname: "/media/**",
-      },
-    ],
+    // Les images sont déjà redimensionnées/compressées par Pillow à l'upload
+    // (max 1600px, JPEG q82). Le endpoint /_next/image est donc inutile
+    // et très coûteux en CPU. Nginx sert /media/ directement avec cache 30j.
+    unoptimized: true,
   },
   async headers() {
     return [
