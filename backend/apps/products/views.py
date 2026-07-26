@@ -50,10 +50,33 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         from django.db.models import Q
-        # annotate pour éviter le N+1 dans CategorySerializer.get_product_count
         return Category.objects.filter(is_active=True).annotate(
             active_product_count=Count('products', filter=Q(products__is_active=True))
         )
+
+    def list(self, request, *args, **kwargs):
+        cache_key = 'categories_list'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=600)
+        return response
+
+    def _invalidate_cache(self):
+        cache.delete('categories_list')
+
+    def perform_create(self, serializer):
+        serializer.save()
+        self._invalidate_cache()
+
+    def perform_update(self, serializer):
+        serializer.save()
+        self._invalidate_cache()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        self._invalidate_cache()
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -74,8 +97,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.request.user.is_authenticated and self.request.user.is_admin_user:
-            return Product.objects.all().select_related('category').prefetch_related('images')
-        return Product.objects.filter(is_active=True).select_related('category').prefetch_related('images')
+            return Product.objects.all().select_related('category').prefetch_related('images', 'reviews')
+        return Product.objects.filter(is_active=True).select_related('category').prefetch_related('images', 'reviews')
 
     def list(self, request, *args, **kwargs):
         cache_key = 'products_list_' + hashlib.md5(request.get_full_path().encode()).hexdigest()
@@ -83,7 +106,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         if cached is not None:
             return Response(cached)
         response = super().list(request, *args, **kwargs)
-        cache.set(cache_key, response.data, timeout=60)
+        cache.set(cache_key, response.data, timeout=300)
         return response
 
     def _invalidate_list_cache(self):
@@ -91,6 +114,9 @@ class ProductViewSet(viewsets.ModelViewSet):
             cache.delete_pattern('products_list_*')
         except Exception:
             cache.clear()
+        # Invalider aussi les endpoints dérivés
+        cache.delete('products_featured')
+        cache.delete('products_new_arrivals')
 
     def create(self, request, *args, **kwargs):
         serializer = ProductWriteSerializer(data=request.data)
@@ -129,15 +155,27 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def featured(self, request):
+        cache_key = 'products_featured'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
         products = self.get_queryset().filter(is_featured=True)[:8]
         ctx = self.get_serializer_context()
-        return Response(ProductListSerializer(products, many=True, context=ctx).data)
+        data = ProductListSerializer(products, many=True, context=ctx).data
+        cache.set(cache_key, data, timeout=300)
+        return Response(data)
 
     @action(detail=False, methods=['get'])
     def new_arrivals(self, request):
+        cache_key = 'products_new_arrivals'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
         products = self.get_queryset().filter(is_new=True)[:8]
         ctx = self.get_serializer_context()
-        return Response(ProductListSerializer(products, many=True, context=ctx).data)
+        data = ProductListSerializer(products, many=True, context=ctx).data
+        cache.set(cache_key, data, timeout=300)
+        return Response(data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAdminOrReadOnly])
     def add_image(self, request, slug=None):

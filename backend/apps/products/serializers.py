@@ -54,12 +54,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_reviews_count(self, obj):
-        return obj.reviews.filter(is_approved=True).count()
+        # obj.reviews.all() utilise le prefetch_related('reviews') — pas de requête DB
+        return sum(1 for r in obj.reviews.all() if r.is_approved)
 
     def get_average_rating(self, obj):
-        reviews = obj.reviews.filter(is_approved=True)
-        if reviews.exists():
-            return round(sum(r.rating for r in reviews) / reviews.count(), 1)
+        approved = [r for r in obj.reviews.all() if r.is_approved]
+        if approved:
+            return round(sum(r.rating for r in approved) / len(approved), 1)
         return None
 
 

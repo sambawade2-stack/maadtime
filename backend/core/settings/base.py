@@ -80,6 +80,9 @@ DATABASES = {
         'PASSWORD': config('POSTGRES_PASSWORD'),
         'HOST': config('POSTGRES_HOST', default='db'),
         'PORT': config('POSTGRES_PORT', default='5432'),
+        # Réutilise la même connexion PostgreSQL pendant 60s au lieu d'en
+        # ouvrir une nouvelle à chaque requête (économise ~5ms par appel API).
+        'CONN_MAX_AGE': 60,
     }
 }
 
