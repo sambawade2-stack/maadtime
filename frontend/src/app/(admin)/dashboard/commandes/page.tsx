@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Plus, X, Trash2, Phone, PhoneCall, Loader2 } from "lucide-react";
-import { Order, Product } from "@/types";
-import { dashboardApi } from "@/lib/api";
+import {
+  Search, Plus, X, Trash2, Phone, PhoneCall, Loader2,
+  Package, MapPin, FileText, Eye, ChevronRight,
+} from "lucide-react";
+import Image from "next/image";
+import { Order, OrderItem, Product } from "@/types";
+import { dashboardApi, ordersApi } from "@/lib/api";
 import { formatPrice, formatDate, getOrderStatusColor, REGIONS_SENEGAL } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
@@ -29,6 +33,10 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
+
+  // --- Panneau de détail commande ---
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // --- Modal nouvelle commande ---
   const [modalOpen, setModalOpen] = useState(false);
@@ -64,6 +72,19 @@ export default function AdminOrdersPage() {
     }, 300);
     return () => clearTimeout(t);
   }, [productSearch]);
+
+  const openDetail = async (order: Order) => {
+    setDetailLoading(true);
+    setSelectedOrder(order);
+    try {
+      const { data } = await ordersApi.detail(order.id);
+      setSelectedOrder(data);
+    } catch {
+      toast.error("Impossible de charger le détail");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const addToCart = (p: Product) => {
     setCart((prev) => {
@@ -113,105 +134,271 @@ export default function AdminOrdersPage() {
     } finally { setSubmitting(false); }
   };
 
-  const updateStatus = async (id: number, status: string) => {
+  const updateStatus = async (id: number, newStatus: string) => {
     try {
-      await dashboardApi.updateOrderStatus(id, status);
+      await dashboardApi.updateOrderStatus(id, newStatus);
       toast.success("Statut mis à jour");
       fetchOrders();
+      // Mettre à jour le panneau ouvert si c'est la même commande
+      if (selectedOrder?.id === id) {
+        setSelectedOrder((prev) => prev ? { ...prev, status: newStatus as any } : prev);
+      }
     } catch { toast.error("Erreur"); }
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold">Commandes</h1>
-        <button onClick={openModal} className="btn-primary text-sm gap-2">
-          <PhoneCall className="w-4 h-4" />
-          Commande téléphonique
-        </button>
-      </div>
-
-      <div className="bg-white dark:bg-card rounded-2xl shadow-card overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Numéro, client..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green/30"
-            />
-          </div>
-          <div className="flex gap-2 overflow-x-auto">
-            {STATUS_OPTIONS.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setFilterStatus(s.value)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  filterStatus === s.value ? "bg-brand-green text-white" : "bg-muted text-muted-foreground hover:bg-brand-beige"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+    <div className="p-6 flex gap-6">
+      {/* ── Colonne principale ── */}
+      <div className={`flex-1 min-w-0 transition-all duration-300 ${selectedOrder ? "lg:mr-[420px]" : ""}`}>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-display text-2xl font-bold">Commandes</h1>
+          <button onClick={openModal} className="btn-primary text-sm gap-2">
+            <PhoneCall className="w-4 h-4" />
+            Commande téléphonique
+          </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {["#Commande", "Client", "Région", "Articles", "Total", "Statut", "Date", "Action"].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="border-b border-border/50 animate-pulse">
-                    <td colSpan={8} className="px-4 py-3"><div className="h-8 bg-muted rounded" /></td>
-                  </tr>
-                ))
-              ) : orders.map((o) => (
-                <tr key={o.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-mono font-bold text-brand-green text-xs">#{o.order_number}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{o.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{o.phone}</p>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">{o.city}</td>
-                  <td className="px-4 py-3 text-center text-muted-foreground">{o.items_count}</td>
-                  <td className="px-4 py-3 font-semibold">{formatPrice(o.total)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(o.status)}`}>
-                      {o.status_display}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(o.created_at)}</td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={o.status}
-                      onChange={(e) => updateStatus(o.id, e.target.value)}
-                      className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-green"
-                    >
-                      {STATUS_OPTIONS.filter(s => s.value).map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
+        <div className="bg-white dark:bg-card rounded-2xl shadow-card overflow-hidden">
+          <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Numéro, client..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto">
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setFilterStatus(s.value)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    filterStatus === s.value ? "bg-brand-green text-white" : "bg-muted text-muted-foreground hover:bg-brand-beige"
+                  }`}
+                >
+                  {s.label}
+                </button>
               ))}
-            </tbody>
-          </table>
-          {!loading && orders.length === 0 && (
-            <p className="text-center text-muted-foreground py-12 text-sm">Aucune commande</p>
-          )}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  {["#Commande", "Client", "Région", "Articles", "Total", "Statut", "Date", "Action"].map((h) => (
+                    <th key={h} className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="border-b border-border/50 animate-pulse">
+                      <td colSpan={8} className="px-4 py-3"><div className="h-8 bg-muted rounded" /></td>
+                    </tr>
+                  ))
+                ) : orders.map((o) => (
+                  <tr
+                    key={o.id}
+                    onClick={() => openDetail(o)}
+                    className={`border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer ${
+                      selectedOrder?.id === o.id ? "bg-brand-green/5 border-l-2 border-l-brand-green" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-mono font-bold text-brand-green text-xs">#{o.order_number}</p>
+                        <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{o.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{o.phone}</p>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{o.city}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <Package className="w-3 h-3" />
+                        {o.items_count ?? o.items?.length ?? "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold">{formatPrice(o.total)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(o.status)}`}>
+                        {o.status_display}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(o.created_at)}</td>
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <select
+                        value={o.status}
+                        onChange={(e) => updateStatus(o.id, e.target.value)}
+                        className="text-xs border border-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-green"
+                      >
+                        {STATUS_OPTIONS.filter(s => s.value).map((s) => (
+                          <option key={s.value} value={s.value}>{s.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!loading && orders.length === 0 && (
+              <p className="text-center text-muted-foreground py-12 text-sm">Aucune commande</p>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* ── Panneau de détail (fixé à droite) ── */}
+      <AnimatePresence>
+        {selectedOrder && (
+          <motion.aside
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            className="fixed top-0 right-0 h-full w-[420px] bg-white dark:bg-card border-l border-border shadow-2xl z-40 flex flex-col overflow-hidden"
+          >
+            {/* Header panneau */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+              <div>
+                <p className="font-mono font-bold text-brand-green">#{selectedOrder.order_number}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{formatDate(selectedOrder.created_at)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(selectedOrder.status)}`}>
+                  {selectedOrder.status_display || selectedOrder.status}
+                </span>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {detailLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-brand-green" />
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto">
+                {/* Changer le statut */}
+                <div className="px-5 py-4 border-b border-border">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Modifier le statut</p>
+                  <select
+                    value={selectedOrder.status}
+                    onChange={(e) => updateStatus(selectedOrder.id, e.target.value)}
+                    className="w-full text-sm border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                  >
+                    {STATUS_OPTIONS.filter(s => s.value).map((s) => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Articles commandés */}
+                <div className="px-5 py-4 border-b border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="w-4 h-4 text-brand-green" />
+                    <h3 className="font-semibold text-sm">
+                      Articles ({selectedOrder.items?.length ?? 0})
+                    </h3>
+                  </div>
+
+                  {selectedOrder.items?.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedOrder.items.map((item: OrderItem) => (
+                        <div key={item.id} className="flex items-center gap-3">
+                          {/* Image produit */}
+                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-brand-beige shrink-0">
+                            {item.product_image ? (
+                              <img
+                                src={item.product_image}
+                                alt={item.product_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xl">🌿</div>
+                            )}
+                          </div>
+
+                          {/* Infos produit */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.product_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatPrice(item.price)} × {item.quantity}
+                            </p>
+                          </div>
+
+                          {/* Total ligne */}
+                          <p className="text-sm font-semibold shrink-0">{formatPrice(item.total)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Aucun article</p>
+                  )}
+                </div>
+
+                {/* Récapitulatif des prix */}
+                <div className="px-5 py-4 border-b border-border space-y-2">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Sous-total</span>
+                    <span>{formatPrice(selectedOrder.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Livraison</span>
+                    <span>{selectedOrder.delivery_fee > 0 ? formatPrice(selectedOrder.delivery_fee) : "Gratuite"}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold pt-1 border-t border-border">
+                    <span>Total</span>
+                    <span className="text-brand-green">{formatPrice(selectedOrder.total)}</span>
+                  </div>
+                </div>
+
+                {/* Infos client + livraison */}
+                <div className="px-5 py-4 border-b border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="w-4 h-4 text-brand-green" />
+                    <h3 className="font-semibold text-sm">Livraison</h3>
+                  </div>
+                  <div className="space-y-1.5 text-sm">
+                    <p className="font-medium">{selectedOrder.full_name}</p>
+                    <p className="text-muted-foreground flex items-center gap-1.5">
+                      <Phone className="w-3 h-3" /> {selectedOrder.phone}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {[selectedOrder.address_line, selectedOrder.neighborhood, selectedOrder.city, selectedOrder.country]
+                        .filter(Boolean).join(", ")}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selectedOrder.notes && (
+                  <div className="px-5 py-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="w-4 h-4 text-brand-green" />
+                      <h3 className="font-semibold text-sm">Notes</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground bg-muted/50 rounded-xl p-3">
+                      {selectedOrder.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* ── Modal commande téléphonique ── */}
       <AnimatePresence>
@@ -251,7 +438,6 @@ export default function AdminOrdersPage() {
                   <div className="space-y-4">
                     <h3 className="font-semibold text-sm">Produits</h3>
 
-                    {/* Recherche produit */}
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
@@ -283,7 +469,6 @@ export default function AdminOrdersPage() {
                       )}
                     </div>
 
-                    {/* Panier */}
                     {cart.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground text-sm border-2 border-dashed border-border rounded-2xl">
                         Aucun produit — recherchez ci-dessus
