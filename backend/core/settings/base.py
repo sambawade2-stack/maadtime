@@ -84,9 +84,8 @@ DATABASES = {
         'PASSWORD': config('POSTGRES_PASSWORD'),
         'HOST': config('POSTGRES_HOST', default='db'),
         'PORT': config('POSTGRES_PORT', default='5432'),
-        # Réutilise la même connexion PostgreSQL pendant 60s au lieu d'en
-        # ouvrir une nouvelle à chaque requête (économise ~5ms par appel API).
-        'CONN_MAX_AGE': 60,
+        # Daphne/ASGI ne supporte pas les connexions persistantes — doit être 0.
+        'CONN_MAX_AGE': 0,
     }
 }
 
@@ -192,11 +191,15 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # Django Channels — Redis comme channel layer (base de données 1 pour ne pas
 # mélanger avec le cache applicatif qui est sur la base 0)
+from urllib.parse import urlparse as _urlparse, urlunparse as _urlunparse
+_r = _urlparse(REDIS_URL)
+_REDIS_CHANNEL_URL = _urlunparse(_r._replace(path='/1'))
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [REDIS_URL.replace('/0', '/1')],
+            'hosts': [_REDIS_CHANNEL_URL],
         },
     },
 }
