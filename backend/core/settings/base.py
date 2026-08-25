@@ -20,6 +20,8 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    'daphne',
+    'channels',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -33,6 +35,7 @@ LOCAL_APPS = [
     'apps.siteconfig',
     'apps.products',
     'apps.orders',
+    'apps.notifications',
     'apps.customers',
     'apps.deliveries',
     'apps.dashboard',
@@ -71,6 +74,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
 
 DATABASES = {
     'default': {
@@ -185,3 +189,18 @@ CACHES = {
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TIMEZONE = TIME_ZONE
+
+# Django Channels — Redis comme channel layer (base de données 1 pour ne pas
+# mélanger avec le cache applicatif qui est sur la base 0)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL.replace('/0', '/1')],
+        },
+    },
+}
+
+# Telegram Bot (token uniquement côté backend, jamais dans le frontend)
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
+TELEGRAM_CHAT_ID = config('TELEGRAM_CHAT_ID', default='')

@@ -5,13 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Truck,
-  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, Bell, UserCircle,
+  BarChart3, Leaf, LogOut, Menu, X, AlertTriangle, Tag, UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
-import { useOrderPolling } from "@/hooks/useOrderPolling";
+import { useNotifications } from "@/hooks/useNotifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import NotificationBell from "@/components/admin/NotificationBell";
 
 const navSections = [
   {
@@ -51,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { newOrdersCount, clearNewOrders } = useNotificationStore();
 
-  useOrderPolling();
+  useNotifications();   // WebSocket temps réel (remplace le polling 30s)
   usePushNotifications();
 
   // Vérifier la session au montage (rafraîchit le token si nécessaire)
@@ -195,19 +196,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <div className="flex-1" />
 
-          {/* Cloche notifications */}
-          {newOrdersCount > 0 && (
-            <Link
-              href="/dashboard/commandes"
-              onClick={clearNewOrders}
-              className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 transition-colors"
-            >
-              <Bell className="w-5 h-5 text-red-500" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                {newOrdersCount > 99 ? "99+" : newOrdersCount}
-              </span>
-            </Link>
-          )}
+          {/* Cloche notifications temps réel */}
+          <NotificationBell />
 
           <Link href="/" className="text-sm text-muted-foreground hover:text-brand-green transition-colors">
             Voir le site →

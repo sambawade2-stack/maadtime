@@ -48,6 +48,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = CreateOrderSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
+        # Déclenche DB notification + WebSocket + Telegram (non-bloquant)
+        try:
+            from apps.notifications.service import handle_new_order
+            handle_new_order(order)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error(f"handle_new_order error: {exc}")
         return Response(OrderDetailSerializer(order).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['patch'], permission_classes=[IsAdminUser])

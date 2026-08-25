@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/customers/', include('apps.customers.urls')),
     path('api/deliveries/', include('apps.deliveries.urls')),
     path('api/dashboard/', include('apps.dashboard.urls')),
+    path('api/notifications/', include('apps.notifications.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # API docs uniquement en développement

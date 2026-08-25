@@ -69,7 +69,7 @@ services:
       sh -c "until python -c 'import psycopg2,os; psycopg2.connect(host=\"db\",port=5432,user=os.environ[\"POSTGRES_USER\"],password=os.environ[\"POSTGRES_PASSWORD\"],dbname=os.environ[\"POSTGRES_DB\"])' 2>/dev/null; do echo 'Waiting for DB...'; sleep 3; done &&
              python manage.py migrate --settings=core.settings.production &&
              python manage.py collectstatic --noinput --settings=core.settings.production &&
-             gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+             daphne -b 0.0.0.0 -p 8000 core.asgi:application"
     networks:
       - dokploy-network
     deploy:
